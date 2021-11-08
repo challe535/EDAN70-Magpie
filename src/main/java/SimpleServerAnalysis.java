@@ -61,6 +61,16 @@ public class SimpleServerAnalysis implements ServerAnalysis {
           results = analyze(srcPath, libPath);
         }
 
+        for (AnalysisResult r : results) {
+          LOG.info("Results URL = " + r.position().getURL());
+          LOG.info("Result first line = " + r.position().getFirstLine());
+          LOG.info("Result last line = " + r.position().getLastLine());
+          LOG.info("Result first col = " + r.position().getFirstCol());
+          LOG.info("Result last col = " + r.position().getLastCol());
+          LOG.info("Result first offset = " + r.position().getFirstOffset());
+          LOG.info("Result last offset = " + r.position().getLastOffset());
+        }
+
         server.consume(results, source());
     //   }
     // });
@@ -111,6 +121,8 @@ public class SimpleServerAnalysis implements ServerAnalysis {
     StringEqAnalysis analysis = new StringEqAnalysis();
     analysis.doAnalysis(jChecker.getEntryPoint());
     results.addAll(analysis.getResult());
+
+    LOG.info("Analysis Done");
 
     return results;
   }
