@@ -1,0 +1,11 @@
+#directories
+target/
+vscode/node_modules/
+vscode/out/
+
+
+#files
+dependency-reduced-pom.xml
+vscode/*.jar
+vscode/*.vsix
+install-vsc-extension.sh
