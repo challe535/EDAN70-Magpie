@@ -31,18 +31,6 @@
 			<artifactId>magpiebridge</artifactId>
 			<version>${magpiebridge.version}</version>
 		</dependency>
-		<!-- IRConverter -->
-		<dependency>
-			<groupId>magpiebridge</groupId>
-			<artifactId>irconverter</artifactId>
-			<version>${irconverter.version}</version>
-		</dependency>
-		<!-- soot -->
-		<dependency>
-			<groupId>ca.mcgill.sable</groupId>
-			<artifactId>soot</artifactId>
-			<version>${soot.version}</version>
-		</dependency>
 		
 		<dependency>
 			<groupId>junit</groupId>

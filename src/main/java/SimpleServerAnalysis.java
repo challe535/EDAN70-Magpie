@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
+import com.github.javaparser.utils.Log;
 import com.ibm.wala.classLoader.Module;
 
 import org.extendj.IntraJ;
@@ -42,24 +43,28 @@ public class SimpleServerAnalysis implements ServerAnalysis {
 
   @Override
   public void analyze(Collection<? extends Module> files, AnalysisConsumer consumer, boolean rerun) {
-    if (last != null && !last.isDone()) {
-      last.cancel(false);
-      if (last.isCancelled())
-        LOG.info("Susscessfully cancelled last analysis and start new");
-    }
-    Future<?> future = exeService.submit(new Runnable() {
-      @Override
-      public void run() {
+    // if (last != null && !last.isDone()) {
+    //   last.cancel(false);
+    //   if (last.isCancelled())
+    //     LOG.info("Susscessfully cancelled last analysis and start new");
+    // }
+
+    // Future<?> future = exeService.submit(new Runnable() {
+    //   @Override
+    //   public void run() {
+
+        LOG.info("starting analysis");
         MagpieServer server=(MagpieServer) consumer;
         setClassPath(server);
         Collection<AnalysisResult> results = Collections.emptyList();
         if (srcPath != null) {
           results = analyze(srcPath, libPath);
         }
+
         server.consume(results, source());
-      }
-    });
-    last = future;
+    //   }
+    // });
+    // last = future;
   }
 
   /**
@@ -90,17 +95,18 @@ public class SimpleServerAnalysis implements ServerAnalysis {
   public Collection<AnalysisResult> analyze(Set<String> srcPath, Set<String> libPath) {
     Collection<AnalysisResult> results = new HashSet<>();
 
-    String[] args = (String[])srcPath.toArray();
     IntraJ jChecker = new IntraJ();
+
+    String[] args = {srcPath.iterator().next()};
+    if(!srcPath.isEmpty())
+      args[0] += "\\Test.java";
+
     int execCode = jChecker.run(args);
 
-    for (String arg : args) {
-      LOG.info(arg + " :: ");
-    }
-
-    if (1 == execCode) {
-      LOG.severe("IntraJ compilation failed");
-    }
+    LOG.info("Hello User");
+    LOG.info("Executing analysis on " + args[0]);
+    LOG.info("Nr of args: " + args.length);
+    LOG.info("ExtendJ compilation code " + String.valueOf(execCode));
 
     StringEqAnalysis analysis = new StringEqAnalysis();
     analysis.doAnalysis(jChecker.getEntryPoint());
