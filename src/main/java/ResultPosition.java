@@ -1,3 +1,5 @@
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.MalformedURLException;
@@ -19,6 +21,7 @@ public class ResultPosition implements Position {
     private int lastCol;
 
     private URL urlToSourceFile;
+    private String srcPath;
 
     //Default constructor usefull for testing
     public ResultPosition(String cuPath) {
@@ -31,10 +34,10 @@ public class ResultPosition implements Position {
         firstCol = 3;
         lastCol = 10;
 
-        String sourceFilePath = cuPath;
+        srcPath = cuPath;
 
         try {
-            urlToSourceFile = new URL("file://" + sourceFilePath);
+            urlToSourceFile = new URL("file://" + srcPath);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
@@ -50,10 +53,10 @@ public class ResultPosition implements Position {
         firstCol = Symbol.getColumn(firstOffset);
         lastCol = Symbol.getColumn(lastOffset);
 
-        String sourceFilePath = cuPath;
+        srcPath = cuPath;
 
         try {
-            urlToSourceFile = new URL("file://" + sourceFilePath);
+            urlToSourceFile = new URL("file://" + srcPath);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
@@ -69,10 +72,10 @@ public class ResultPosition implements Position {
         this.firstCol = firstCol;
         this.lastCol = lastCol;
 
-        String sourceFilePath = cuPath;
+        srcPath = cuPath;
 
         try {
-            urlToSourceFile = new URL("file://" + sourceFilePath);
+            urlToSourceFile = new URL("file://" + srcPath);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
@@ -115,14 +118,12 @@ public class ResultPosition implements Position {
 
     @Override
     public int compareTo(SourcePosition o) {
-        // TODO Auto-generated method stub
-        return 0;
+        return o.getFirstOffset() - firstOffset;
     }
 
     @Override
     public Reader getReader() throws IOException {
-        // TODO Auto-generated method stub
-        return null;
+        return new FileReader(new File(srcPath));
     }
     
 }
