@@ -6,16 +6,21 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import org.extendj.ast.CompilationUnit;
+import org.extendj.ast.Problem;
 import org.extendj.ast.Program;
-import org.extendj.ast.WarningMsg;
+// import org.extendj.ast.WarningMsg;
+
+import beaver.Symbol;
+
 import org.eclipse.lsp4j.DiagnosticSeverity;
-import org.extendj.ast.Analysis;
+// import org.extendj.ast.Analysis;
 
 import org.extendj.ast.ASTNode;
 
@@ -25,50 +30,53 @@ import com.ibm.wala.util.collections.Pair;
 
 import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
+import magpiebridge.util.SourceCodeReader;
 
 public class StringEqAnalysis {
   private static final Logger LOG = Logger.getLogger("main");
-  private Collection<AnalysisResult> result;
+  private Collection<AnalysisResult> results;
 
   public StringEqAnalysis() {
-      result = new HashSet<>();
+      results = new HashSet<>();
       LOG.info("new analysis created");
   }
 
-  public void doAnalysis(Program p) {
-      Analysis analysis = Analysis.DAA;
+  public void doAnalysis(CompilationUnit cu) {
+    Collection<Problem> probs = cu.warnings();
 
-      try {
-          for (CompilationUnit cu : p.getCompilationUnits()) {
-            String cuPath = cu.pathName();
+    LOG.info("Doing analysis");
+    LOG.info("Nr of parseErrors = " + cu.parseErrors().size());
+    LOG.info("Nr of semErrors = " + cu.errors().size());
+    LOG.info("Nr of warnings = " + cu.warnings().size());
 
-            LOG.info("CUPath = " + cuPath);
+    for (Problem p : probs) {
+        String type = p.message().split("::")[0];
 
-            TreeSet<WarningMsg> wmgs = (TreeSet<WarningMsg>)cu.getClass()
-                                            .getDeclaredMethod(analysis.toString())
-                                            .invoke(cu);
-            for (WarningMsg wm : wmgs) {
-              if (analysis.equals(wm.getAnalysisType())) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                PrintStream s = new PrintStream(baos);
-                
-                wm.print(s);
+        LOG.info(p.message());
+        
+        if(type.equals("StringEqCheck")) {
+            LOG.info("Result found");
 
-                LOG.warning(baos.toString());
+            ResultPosition position = new ResultPosition(p.line(), p.endLine(), p.column(), p.endColumn(), cu.pathName());
+            List<Pair<Position, String>> relatedInfo = new ArrayList<>();
 
-                List<Pair<Position, String>> relatedInfo = new ArrayList<>();
-                result.add(new Result(Kind.Diagnostic, new ResultPosition(cuPath) , baos.toString(), relatedInfo, 
-                                      DiagnosticSeverity.Error, null, "some code"));
-              }
+            String code = "no code";
+            try {
+                code = SourceCodeReader.getLinesInString(position);
+            } catch (Exception e) {
+                LOG.warning("Error retrieving code from source file");
+                e.printStackTrace();
             }
-          }
-        } catch (Throwable t) {
-          LOG.severe(t.getMessage());
+            
+            results.add(new Result(Kind.Diagnostic, position, p.message(), relatedInfo, DiagnosticSeverity.Warning, null, code));
         }
+    }
   }
 
   public Collection<AnalysisResult> getResult() {
-      return result;
+      return results;
   }
+
+  
 
 }

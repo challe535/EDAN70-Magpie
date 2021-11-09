@@ -12,7 +12,9 @@ import java.util.logging.Logger;
 import com.github.javaparser.utils.Log;
 import com.ibm.wala.classLoader.Module;
 
-import org.extendj.IntraJ;
+import org.extendj.JavaChecker;
+import org.extendj.ast.CompilationUnit;
+import org.extendj.ast.List;
 
 import magpiebridge.core.AnalysisConsumer;
 import magpiebridge.core.AnalysisResult;
@@ -105,21 +107,34 @@ public class SimpleServerAnalysis implements ServerAnalysis {
   public Collection<AnalysisResult> analyze(Set<String> srcPath, Set<String> libPath) {
     Collection<AnalysisResult> results = new HashSet<>();
 
-    IntraJ jChecker = new IntraJ();
+    // IntraJ jChecker = new IntraJ();
+    JavaChecker strChecker = new JavaChecker();
+
+    String testClass = "Test";
 
     String[] args = {srcPath.iterator().next()};
     if(!srcPath.isEmpty())
-      args[0] += "\\Test.java";
+      args[0] += "\\" + testClass + ".java";
 
-    int execCode = jChecker.run(args);
+    int execCode = strChecker.run(args);
 
     LOG.info("Hello User");
     LOG.info("Executing analysis on " + args[0]);
     LOG.info("Nr of args: " + args.length);
     LOG.info("ExtendJ compilation code " + String.valueOf(execCode));
 
+    List<CompilationUnit> l = JavaChecker.DrAST_root_node.getCompilationUnits();
+
+    for (CompilationUnit cu : l) {
+      LOG.info("CU path: " + cu.pathName());
+      LOG.info("CU relative: " + cu.relativeName());
+      LOG.info("CU warnings.size: " + cu.warnings().size());
+      LOG.info("CU sourceName: " + cu.getClassSource().sourceName());
+    }
+
     StringEqAnalysis analysis = new StringEqAnalysis();
-    analysis.doAnalysis(jChecker.getEntryPoint());
+    analysis.doAnalysis(JavaChecker.DrAST_root_node.getCompilationUnit(0));
+
     results.addAll(analysis.getResult());
 
     LOG.info("Analysis Done");

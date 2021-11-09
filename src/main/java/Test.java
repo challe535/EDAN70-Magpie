@@ -1,15 +1,17 @@
 
-public class Test{
+public class Test {
+    public static void main(String[] args) {
+      if (args.length > 0 && args[0] == "xcdadfda") {
+        System.out.println("dfkj");
+      }
 
-    public static void main(String... args) {
-        String s1 = "Hello IntraJ";
-        String s2 = "Hello IntraJ";
-        String s3 = "Unused var";
+      String s1 = "Hello World";
+      String s2 = "Hello World";
+      if(s1 == s2){}
+      if(s1.equals(s2)){}
 
-        if(s1 == s2)
-            System.out.println("== used");
+      String s3 = "woop";
 
-        if(s1.equals(s2))
-            System.out.println(".equals used");
+      boolean b = s3 == s2;
     }
-}
+  }

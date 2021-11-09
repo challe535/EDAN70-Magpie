@@ -20,9 +20,15 @@
 
 	<dependencies>
 		<!-- Local IntraJ -->
-		<dependency>
+		<!-- <dependency>
 			<groupId>lucssde</groupId>
 			<artifactId>IntraJ</artifactId>
+			<version>1.0.0</version>
+		</dependency> -->
+		<!-- Local template string eq -->
+		<dependency>
+			<groupId>lucssde</groupId>
+			<artifactId>template</artifactId>
 			<version>1.0.0</version>
 		</dependency>
 		<!-- MagpieBridge -->

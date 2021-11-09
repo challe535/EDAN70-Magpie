@@ -14,7 +14,12 @@ public class Main {
 
   public static void main(String... args) {
     Supplier<MagpieServer> createServer = () -> {
-      MagpieServer server = new MagpieServer(new ServerConfiguration());
+      ServerConfiguration config = new ServerConfiguration();
+
+      //setup server config for analysis triggering
+      config.setDoAnalysisBySave(true);
+
+      MagpieServer server = new MagpieServer(config);
       String language = "java";
       IProjectService javaProjectService = new JavaProjectService();
       server.addProjectService(language, javaProjectService);

@@ -8,6 +8,8 @@ import com.ibm.wala.classLoader.IMethod.SourcePosition;
 
 import org.extendj.ast.ASTNode;
 
+import beaver.Symbol;
+
 public class ResultPosition implements Position {
     private int firstOffset;
     private int lastOffset;
@@ -42,11 +44,30 @@ public class ResultPosition implements Position {
         firstOffset = resultSourceNode.getStart();
         lastOffset = resultSourceNode.getEnd();
 
-        firstLine = resultSourceNode.lineStart();
-        lastLine = resultSourceNode.lineEnd();
+        firstLine = Symbol.getLine(firstOffset);
+        lastLine = Symbol.getLine(lastOffset);
 
-        firstCol = resultSourceNode.columnStart();
-        lastCol = resultSourceNode.columnEnd();
+        firstCol = Symbol.getColumn(firstOffset);
+        lastCol = Symbol.getColumn(lastOffset);
+
+        String sourceFilePath = cuPath;
+
+        try {
+            urlToSourceFile = new URL("file://" + sourceFilePath);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public ResultPosition(int firstLine, int lastLine,int firstCol, int lastCol, String cuPath) {
+        this.firstOffset = Symbol.makePosition(firstLine, firstCol);
+        this.lastOffset = Symbol.makePosition(lastLine, lastCol);
+
+        this.firstLine = firstLine;
+        this.lastLine = lastLine;
+
+        this.firstCol = firstCol;
+        this.lastCol = lastCol;
 
         String sourceFilePath = cuPath;
 
