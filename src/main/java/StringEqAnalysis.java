@@ -14,7 +14,6 @@ import com.ibm.wala.util.collections.Pair;
 
 import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
-import magpiebridge.util.SourceCodeReader;
 
 public class StringEqAnalysis {
   private static final Logger LOG = Logger.getLogger("main");
@@ -46,14 +45,19 @@ public class StringEqAnalysis {
 
             String code = "no code";
             try {
-                code = SourceCodeReader.getLinesInString(position);
+                code = MySourceCodeReader.getLinesInString(position);
             } catch (Exception e) {
                 LOG.warning("Error retrieving code from source file");
                 e.printStackTrace();
             }
 
             String[] lr = code.split("==");
-            for(String s : lr) s = s.trim();
+            
+            for(int i = 0; i < lr.length; i++) {
+                lr[i] = lr[i].trim();
+                lr[i] = lr[i].replace("\n", "").replace("\r", "");
+            }
+
             String correctCode = lr[0] + ".equals(" + lr[1] + ")";
 
             Pair<Position, String> repair = Pair.make(position, correctCode);

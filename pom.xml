@@ -13,9 +13,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<magpiebridge.version>0.0.8</magpiebridge.version>
-		<irconverter.version>0.1.6</irconverter.version>
-		<soot.version>3.3.0</soot.version>
+		<magpiebridge.version>0.1.2</magpiebridge.version>
 	</properties>
 
 	<dependencies>
@@ -33,9 +31,9 @@
 		</dependency>
 		<!-- MagpieBridge -->
 		<dependency>
-			<groupId>magpiebridge</groupId>
+			<groupId>com.github.magpiebridge</groupId>
 			<artifactId>magpiebridge</artifactId>
-			<version>${magpiebridge.version}</version>
+			<version>0.1.2</version>
 		</dependency>
 		
 		<dependency>
@@ -91,11 +89,11 @@
 			</plugin>
 		</plugins>
 	</build>
-	<repositories>
+	<!-- <repositories>
 	  <repository>
 		<id>github</id>
 		<name>GitHub MagpieBridge Apache Maven Packages</name>
 		<url>https://maven.pkg.github.com/MagpieBridge/MagpieBridge</url>
 	  </repository>
-	</repositories>
+	</repositories> -->
 </project>
