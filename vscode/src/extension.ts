@@ -7,7 +7,7 @@ import { LanguageClient, LanguageClientOptions, ServerOptions, StreamInfo } from
 
 export function activate(context: ExtensionContext) {
     let script = 'java';
-    let args = ['-jar',context.asAbsolutePath(path.join('intrep-0.0.1.jar'))];
+    let args = ['-jar',context.asAbsolutePath(path.join('IntRep.jar'))];
     let serverOptions: ServerOptions = {
         run : { command: script, args: args },
         debug: { command: script, args: args} //,ni options: { env: createDebugEnv() }

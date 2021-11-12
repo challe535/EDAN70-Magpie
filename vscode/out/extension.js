@@ -6,7 +6,7 @@ const vscode_1 = require("vscode");
 const vscode_languageclient_1 = require("vscode-languageclient");
 function activate(context) {
     let script = 'java';
-    let args = ['-jar', context.asAbsolutePath(path.join('intrep-0.0.1.jar'))];
+    let args = ['-jar', context.asAbsolutePath(path.join('IntRep.jar'))];
     let serverOptions = {
         run: { command: script, args: args },
         debug: { command: script, args: args } //,ni options: { env: createDebugEnv() }

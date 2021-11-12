@@ -40,7 +40,7 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "cp ../target/intrep-0.0.1.jar  intrep-0.0.1.jar && npm run compile",
+		"vscode:prepublish": "copy ..\\build\\libs\\IntRep.jar  IntRep.jar && npm run compile",
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
 		"postinstall": "node ./node_modules/vscode/bin/install"

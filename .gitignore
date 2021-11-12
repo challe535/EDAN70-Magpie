@@ -1,11 +1,19 @@
-#directories
-target/
-vscode/node_modules/
-vscode/out/
+# Files
+.project
+.classpath
+
+# Directories
+build
+bin
+
+.gradle
+**/.vscode
+.settings
 
 
-#files
-dependency-reduced-pom.xml
+# VSCode 
+vscode/node_modules
+vscode/out
 vscode/*.jar
 vscode/*.vsix
-install-vsc-extension.sh
+vscode/package-lock.json
