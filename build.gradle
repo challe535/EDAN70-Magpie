@@ -1,0 +1,72 @@
+plugins {
+    id 'java'
+    id 'java-library'
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+// jar {
+//     manifest {
+//         attributes "Main-Class": "intrep.Main" 
+//     }
+// }
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    //Testing
+    testImplementation 'junit:junit:4.13.2'
+
+    //Core
+    //api 'com.github.magpiebridge:magpiebridge:0.1.2'
+    implementation 'com.github.magpiebridge:magpiebridge:0.1.2'
+    //runtimeOnly 'com.github.magpiebridge:magpiebridge:0.1.2'
+    implementation project(':IntraJ')
+}
+
+tasks.register('copyJastAddExtras', Copy) {
+    description 'Copies over extra jastadd files to IntraJ. Intended as prebuild step for analysis extenstions.'
+
+    from layout.projectDir.dir("src/jastadd/analysis")
+    into layout.projectDir.dir("IntraJ/src/jastadd/analysis")
+}
+
+build.dependsOn 'copyJastAddExtras'
+
+
+
+task vsce(type:Exec) {
+    workingDir "."
+
+    commandLine 'cmd', '/c', 'generate_vsce.bat'
+
+    standardOutput = new ByteArrayOutputStream()
+
+    ext.output = {
+        return standardOutput.toString()
+    }
+}
+
+vsce.dependsOn 'build'
+
+task replace(type: Jar) { 
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
+        exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    }
+    from sourceSets.main.output
+    manifest {
+        attributes 'Main-Class': 'intrep.Main'
+    }
+    baseName = 'IntRep'
+    destinationDir= file('build/libs')
+}
+
+
+artifacts {
+    archives  replace
+}

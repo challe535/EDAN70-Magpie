@@ -1,0 +1,19 @@
+# Files
+.project
+.classpath
+
+# Directories
+build
+bin
+
+.gradle
+**/.vscode
+.settings
+
+
+# VSCode 
+vscode/node_modules
+vscode/out
+vscode/*.jar
+vscode/*.vsix
+vscode/package-lock.json
