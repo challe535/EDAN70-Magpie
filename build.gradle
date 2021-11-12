@@ -33,9 +33,21 @@ tasks.register('copyJastAddExtras', Copy) {
     from layout.projectDir.dir("src/jastadd/analysis")
     into layout.projectDir.dir("IntraJ/src/jastadd/analysis")
 }
-
 build.dependsOn 'copyJastAddExtras'
 
+
+task submoduleInit(type:Exec) {
+    workingDir "."
+
+    commandLine 'cmd', '/c', 'git_submodule_init.bat'
+
+    standardOutput = new ByteArrayOutputStream()
+
+    ext.output = {
+        return standardOutput.toString()
+    }
+}
+build.dependsOn 'submoduleInit'
 
 
 task vsce(type:Exec) {
@@ -49,8 +61,8 @@ task vsce(type:Exec) {
         return standardOutput.toString()
     }
 }
-
 vsce.dependsOn 'build'
+
 
 task replace(type: Jar) { 
     duplicatesStrategy = DuplicatesStrategy.INCLUDE

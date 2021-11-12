@@ -11,7 +11,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
-import com.github.javaparser.utils.Log;
 import com.ibm.wala.classLoader.Module;
 
 import org.extendj.JavaChecker;
