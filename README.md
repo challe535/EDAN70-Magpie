@@ -2,7 +2,8 @@
 
 ## Building for VS Code
 
-<span style="color:red">*Make sure you save any work currently open in VS Code before continuing, as the following steps will force a restart of VS Code*</span>
+**Make sure you save any work currently open in VS Code before continuing, as the following steps will force a restart of VS Code**
+
 You need to have Node.js and be able to execute `npm` commands in the console.
 
 Execute the `vsce` task with gradlew by
