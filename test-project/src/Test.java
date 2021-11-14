@@ -8,7 +8,7 @@ public class Test {
       String s1 = "Hello World";
       String s2 = "Hello World";
       if(s1 == s2){}
-      if(s1.equals(s2)){}
+      if(s1 == s2){}
 
       String s3 = "woop";
 
