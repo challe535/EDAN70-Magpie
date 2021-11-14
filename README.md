@@ -1,6 +1,6 @@
 # Build instructions
 
-## Building for VS Code
+### Building for VS Code
 
 ***Make sure you save any work currently open in VS Code before continuing, as the following steps will force a restart of VS Code.***
 
@@ -15,10 +15,12 @@ That should automatically build, package, and install the extension to VS Code. 
 
 **Currently you will need to run `gradlew vsce` twice first time you install the extension for it to work properly** 
 
+
+
 # Usage
 
 The extension currently only contains a string equality checking analysis which runs whenever a .java file is opened or saved. In order to test the extension you should open up the 'test-project' directory as a Java project in the IDE you are using the extension with and navigate to the source code files which contain relevant test cases for the analyses performed.
 
-## VS Code usage
+### VS Code usage
 
 If you are using VS Code with the plugin quick fixes won't currently show up in the hover when issues are found. Instead use 'ctrl + .' hotkey  to display quick fixes and that should give you the relevant quick fix options.
