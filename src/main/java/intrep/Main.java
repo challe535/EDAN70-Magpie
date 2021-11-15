@@ -14,7 +14,13 @@ import magpiebridge.projectservice.java.JavaProjectService;
 
 public class Main {
 
+  private static ServerAnalysis myAnalysis = new IntraJServerAnalysis();
+
   public static void main(String... args) {
+
+    //Add analysis
+    IntraJServerAnalysis.addAnalysis(new StringEqAnalysis());
+
     Supplier<MagpieServer> createServer = () -> {
       ServerConfiguration config = new ServerConfiguration();
 
@@ -25,7 +31,6 @@ public class Main {
       String language = "java";
       IProjectService javaProjectService = new JavaProjectService();
       server.addProjectService(language, javaProjectService);
-      ServerAnalysis myAnalysis = new SimpleServerAnalysis();
       Either<ServerAnalysis, ToolAnalysis> analysis = Either.forLeft(myAnalysis);
       server.addAnalysis(analysis, language);
       return server;

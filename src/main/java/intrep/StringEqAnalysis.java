@@ -17,7 +17,7 @@ import com.ibm.wala.util.collections.Pair;
 import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
 
-public class StringEqAnalysis {
+public class StringEqAnalysis implements CodeAnalysis {
   private static final Logger LOG = Logger.getLogger("main");
   private Collection<AnalysisResult> results;
 

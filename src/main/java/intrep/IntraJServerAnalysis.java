@@ -10,12 +10,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
+import java.util.ArrayList;
 
 import com.ibm.wala.classLoader.Module;
 
 import org.extendj.JavaChecker;
 import org.extendj.ast.CompilationUnit;
 import org.extendj.ast.List;
+import org.extendj.IntraJ;
 
 import magpiebridge.core.AnalysisConsumer;
 import magpiebridge.core.AnalysisResult;
@@ -28,15 +30,20 @@ import magpiebridge.projectservice.java.JavaProjectService;
  * @author Linghui Luo
  *
  */
-public class SimpleServerAnalysis implements ServerAnalysis {
+public class IntraJServerAnalysis implements ServerAnalysis {
   private static final Logger LOG = Logger.getLogger("main");
   private Set<String> srcPath;
   private Set<String> libPath;
   private ExecutorService exeService;
   private Future<?> last;
 
-  public SimpleServerAnalysis() {
+  private static IntraJ jChecker;
+  private static Collection<CodeAnalysis> analysisList;
+
+  public IntraJServerAnalysis() {
     exeService = Executors.newSingleThreadExecutor();
+    analysisList = new ArrayList<CodeAnalysis>();
+    jChecker = new IntraJ();
   }
 
   @Override
@@ -56,25 +63,27 @@ public class SimpleServerAnalysis implements ServerAnalysis {
     //   @Override
     //   public void run() {
 
-        LOG.info("starting analysis");
         MagpieServer server=(MagpieServer) consumer;
         setClassPath(server);
-        Collection<AnalysisResult> results = Collections.emptyList();
-        if (srcPath != null) {
-          results = analyze(srcPath, libPath);
-        }
 
-        for (AnalysisResult r : results) {
-          LOG.info("Results URL = " + r.position().getURL());
-          LOG.info("Result first line = " + r.position().getFirstLine());
-          LOG.info("Result last line = " + r.position().getLastLine());
-          LOG.info("Result first col = " + r.position().getFirstCol());
-          LOG.info("Result last col = " + r.position().getLastCol());
-          LOG.info("Result first offset = " + r.position().getFirstOffset());
-          LOG.info("Result last offset = " + r.position().getLastOffset());
-        }
+        String testClass = "Test";
 
-        server.consume(results, source());
+        String[] args = {srcPath.iterator().next()};
+        if(!srcPath.isEmpty())
+          args[0] += "\\" + testClass + ".java";
+
+        int execCode = jChecker.run(args);
+
+        LOG.info("Analysing path: " + args[0]);
+        
+        for (CodeAnalysis analysis : analysisList) {
+          Collection<AnalysisResult> results = Collections.emptyList();
+          if (srcPath != null) {
+            results = analyze(srcPath, libPath, analysis);
+          }
+
+          server.consume(results, source());
+        }
     //   }
     // });
     // last = future;
@@ -105,41 +114,17 @@ public class SimpleServerAnalysis implements ServerAnalysis {
   }
 
 
-  public Collection<AnalysisResult> analyze(Set<String> srcPath, Set<String> libPath) {
+  public Collection<AnalysisResult> analyze(Set<String> srcPath, Set<String> libPath, CodeAnalysis analysis) {
     Collection<AnalysisResult> results = new HashSet<>();
 
-    // IntraJ jChecker = new IntraJ();
-    JavaChecker strChecker = new JavaChecker();
-
-    String testClass = "Test";
-
-    String[] args = {srcPath.iterator().next()};
-    if(!srcPath.isEmpty())
-      args[0] += "\\" + testClass + ".java";
-
-    int execCode = strChecker.run(args);
-
-    LOG.info("Hello User");
-    LOG.info("Executing analysis on " + args[0]);
-    LOG.info("Nr of args: " + args.length);
-    LOG.info("ExtendJ compilation code " + String.valueOf(execCode));
-
-    List<CompilationUnit> l = JavaChecker.DrAST_root_node.getCompilationUnits();
-
-    for (CompilationUnit cu : l) {
-      LOG.info("CU path: " + cu.pathName());
-      LOG.info("CU relative: " + cu.relativeName());
-      LOG.info("CU warnings.size: " + cu.warnings().size());
-      LOG.info("CU sourceName: " + cu.getClassSource().sourceName());
-    }
-
-    StringEqAnalysis analysis = new StringEqAnalysis();
-    analysis.doAnalysis(JavaChecker.DrAST_root_node.getCompilationUnit(0));
-
+    analysis.doAnalysis(jChecker.getEntryPoint().getCompilationUnit(0));
     results.addAll(analysis.getResult());
-
-    LOG.info("Analysis Done");
 
     return results;
   }
+
+  public static void addAnalysis(CodeAnalysis analysis) {
+    analysisList.add(analysis);
+  }
+
 }
