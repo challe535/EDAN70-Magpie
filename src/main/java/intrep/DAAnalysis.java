@@ -31,8 +31,15 @@ public class DAAnalysis implements CodeAnalysis {
     public void doAnalysis(CompilationUnit cu) {
         try {
             TreeSet<WarningMsg> wmgs = (TreeSet<WarningMsg>)cu.getClass()
-            .getDeclaredMethod(ANALYSIS_TYPE.toString())
-            .invoke(cu);     
+                                        .getDeclaredMethod(ANALYSIS_TYPE.toString())
+                                        .invoke(cu);     
+
+            for (WarningMsg wm : wmgs) {
+                LOG.info("wm lstart = " + wm.lineStart);
+                LOG.info("wm lend = " + wm.lineEnd);
+                LOG.info("wm cstart = " + wm.columnStart + 1);
+                LOG.info("wm cend = " + wm.columnEnd + 1);
+            }
         } catch (Throwable t) {
         }   
     }

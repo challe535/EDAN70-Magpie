@@ -20,6 +20,7 @@ public class Main {
 
     //Add analysis
     IntraJServerAnalysis.addAnalysis(new StringEqAnalysis());
+    IntraJServerAnalysis.addAnalysis(new DAAnalysis());
 
     Supplier<MagpieServer> createServer = () -> {
       ServerConfiguration config = new ServerConfiguration();
