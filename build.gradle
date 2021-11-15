@@ -21,9 +21,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
 
     //Core
-    //api 'com.github.magpiebridge:magpiebridge:0.1.2'
     implementation 'com.github.magpiebridge:magpiebridge:0.1.2'
-    //runtimeOnly 'com.github.magpiebridge:magpiebridge:0.1.2'
     implementation project(':IntraJ')
 }
 
