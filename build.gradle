@@ -70,7 +70,7 @@ task replace(type: Jar) {
     }
     from sourceSets.main.output
     manifest {
-        attributes 'Main-Class': 'intrep.Main'
+        attributes 'Main-Class': 'intrep.core.Main'
     }
     baseName = 'IntRep'
     destinationDir= file('build/libs')

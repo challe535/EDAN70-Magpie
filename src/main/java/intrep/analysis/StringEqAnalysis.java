@@ -1,5 +1,6 @@
-package intrep;
+package intrep.analysis;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -8,6 +9,11 @@ import java.util.logging.Logger;
 
 import org.extendj.ast.CompilationUnit;
 import org.extendj.ast.Problem;
+
+import intrep.core.CodeAnalysis;
+import intrep.core.MySourceCodeReader;
+import intrep.core.Result;
+import intrep.core.ResultPosition;
 
 import org.eclipse.lsp4j.DiagnosticSeverity;
 
@@ -23,26 +29,18 @@ public class StringEqAnalysis implements CodeAnalysis {
 
   public StringEqAnalysis() {
       results = new HashSet<>();
-      LOG.info("new analysis created");
   }
 
-  public void doAnalysis(CompilationUnit cu) {
+  public void doAnalysis(CompilationUnit cu, URL url) {
+    results.clear();
     Collection<Problem> probs = cu.warnings();
-
-    LOG.info("Doing analysis");
-    LOG.info("Nr of parseErrors = " + cu.parseErrors().size());
-    LOG.info("Nr of semErrors = " + cu.errors().size());
-    LOG.info("Nr of warnings = " + cu.warnings().size());
 
     for (Problem p : probs) {
         String type = p.message().split("::")[0];
 
-        LOG.info(p.message());
-        
         if(type.equals("StringEqCheck")) {
-            LOG.info("Result found");
 
-            ResultPosition position = new ResultPosition(p.line(), p.endLine(), p.column()-1, p.endColumn(), cu.pathName());
+            ResultPosition position = new ResultPosition(p.line(), p.endLine(), p.column()-1, p.endColumn(), url);
             List<Pair<Position, String>> relatedInfo = new ArrayList<>();
 
             String code = "no code";
@@ -60,10 +58,13 @@ public class StringEqAnalysis implements CodeAnalysis {
                 lr[i] = lr[i].replace("\n", "").replace("\r", "");
             }
 
-            String correctCode = lr[0] + ".equals(" + lr[1] + ")";
+            Pair<Position, String> repair = null;
+            if(lr.length == 2) {
+                String correctCode = lr[0] + ".equals(" + lr[1] + ")";
+                repair = Pair.make(position, correctCode);
+            }
 
-            Pair<Position, String> repair = Pair.make(position, correctCode);
-            relatedInfo.add(repair);
+            if(repair != null) relatedInfo.add(repair);
             
             results.add(new Result(Kind.Diagnostic, position, p.message(), relatedInfo, DiagnosticSeverity.Warning, repair, code));
         }

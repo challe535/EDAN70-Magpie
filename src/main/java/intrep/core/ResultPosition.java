@@ -1,4 +1,4 @@
-package intrep;
+package intrep.core;
 
 import java.io.File;
 import java.io.FileReader;
@@ -26,7 +26,7 @@ public class ResultPosition implements Position {
     private String srcPath;
 
     //Default constructor usefull for testing
-    public ResultPosition(String cuPath) {
+    public ResultPosition(URL url) {
         firstOffset = 3;
         lastOffset = 10;
 
@@ -36,16 +36,10 @@ public class ResultPosition implements Position {
         firstCol = 3;
         lastCol = 10;
 
-        srcPath = cuPath;
-
-        try {
-            urlToSourceFile = new URL("file://" + srcPath);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
+        urlToSourceFile = url;
     }
 
-    public ResultPosition(ASTNode resultSourceNode, String cuPath) {
+    public ResultPosition(ASTNode resultSourceNode, URL url) {
         firstOffset = resultSourceNode.getStart();
         lastOffset = resultSourceNode.getEnd();
 
@@ -55,16 +49,10 @@ public class ResultPosition implements Position {
         firstCol = Symbol.getColumn(firstOffset);
         lastCol = Symbol.getColumn(lastOffset);
 
-        srcPath = cuPath;
-
-        try {
-            urlToSourceFile = new URL("file://" + srcPath);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
+        urlToSourceFile = url;
     }
 
-    public ResultPosition(int firstLine, int lastLine,int firstCol, int lastCol, String cuPath) {
+    public ResultPosition(int firstLine, int lastLine,int firstCol, int lastCol, URL url) {
         this.firstOffset = Symbol.makePosition(firstLine, firstCol);
         this.lastOffset = Symbol.makePosition(lastLine, lastCol);
 
@@ -74,13 +62,7 @@ public class ResultPosition implements Position {
         this.firstCol = firstCol;
         this.lastCol = lastCol;
 
-        srcPath = cuPath;
-
-        try {
-            urlToSourceFile = new URL("file://" + srcPath);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
+        urlToSourceFile = url;
     }
 
     @Override
