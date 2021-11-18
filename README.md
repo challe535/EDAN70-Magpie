@@ -1,3 +1,7 @@
+License
+-------
+This repository is covered by the license BSD 2-clause, see file LICENSE.
+
 # Build instructions
 
 ### Building for VS Code
