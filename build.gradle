@@ -1,3 +1,5 @@
+
+import org.apache.tools.ant.taskdefs.condition.Os
 plugins {
     id 'java'
     id 'java-library'
@@ -33,26 +35,37 @@ tasks.register('copyJastAddExtras', Copy) {
 }
 build.dependsOn 'copyJastAddExtras'
 
+   
 
-task submoduleInit(type:Exec) {
-    workingDir "."
 
-    commandLine 'cmd', '/c', 'git_submodule_init.bat'
+// task submoduleInit(type:Exec) {
+//      if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+//         commandLine 'cmd', '/c', 'git_submodule_init.bat'
+//         println "DETECTED OS: windows. Running git_submodule_init.bat"
+//     }else{
+//         println "DETECTED OS: not windows. Running git_submodule_init.sh"
+//         commandLine 'sh', 'git_submodule_init.sh'
+//     }
+//     workingDir "."
+//     standardOutput = new ByteArrayOutputStream()
 
-    standardOutput = new ByteArrayOutputStream()
-
-    ext.output = {
-        return standardOutput.toString()
-    }
-}
-build.dependsOn 'submoduleInit'
+//     ext.output = {
+//         return standardOutput.toString()
+//     }
+// }
+// build.dependsOn 'submoduleInit'
 
 
 task vsce(type:Exec) {
     workingDir "."
-
-    commandLine 'cmd', '/c', 'generate_vsce.bat'
-
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+         commandLine 'cmd', '/c', 'generate_vsce.bat'
+         println "DETECTED OS: windows. Running `generate_vsce.sh.bat`"
+    }else{
+         commandLine 'sh', 'generate_vsce.sh'
+         println "DETECTED OS: not windows. Running `generate_vsce.sh`"
+    }
+    
     standardOutput = new ByteArrayOutputStream()
 
     ext.output = {
@@ -62,7 +75,7 @@ task vsce(type:Exec) {
 vsce.dependsOn 'build'
 
 
-task replace(type: Jar) { 
+task genJar(type: Jar) { 
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
     from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
@@ -73,10 +86,10 @@ task replace(type: Jar) {
         attributes 'Main-Class': 'intrep.core.Main'
     }
     baseName = 'IntRep'
-    destinationDir= file('build/libs')
+    destinationDir= file('vscode')
 }
 
 
 artifacts {
-    archives  replace
+    archives  genJar
 }
