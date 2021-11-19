@@ -60,7 +60,7 @@ task vsce(type:Exec) {
     workingDir "."
     if (Os.isFamily(Os.FAMILY_WINDOWS)) {
          commandLine 'cmd', '/c', 'generate_vsce.bat'
-         println "DETECTED OS: windows. Running `generate_vsce.sh.bat`"
+         println "DETECTED OS: windows. Running `generate_vsce.bat`"
     }else{
          commandLine 'sh', 'generate_vsce.sh'
          println "DETECTED OS: not windows. Running `generate_vsce.sh`"

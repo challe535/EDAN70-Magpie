@@ -27,6 +27,8 @@ public class Main {
 
     //setup server config for analysis triggering
     config.setDoAnalysisBySave(true);
+    config.setDoAnalysisByFirstOpen(true);
+    config.setDoAnalysisByOpen(false);
 
     MagpieServer server = new MagpieServer(config);
     String language = "java";

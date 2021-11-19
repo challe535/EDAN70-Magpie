@@ -4,9 +4,11 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.security.cert.PKIXRevocationChecker.Option;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -40,7 +42,7 @@ public class StaticServerAnalysis implements ServerAnalysis {
   private static final Logger LOG = Logger.getLogger("main");
   private Set<String> srcPath;
   private Set<String> libPath;
-  private Set<String> srcFilesAbsPaths;
+  private Set<String> progFilesAbsPaths;
   private String totalClassPath;
   private ExecutorService exeService;
   private Future<?> last;
@@ -50,6 +52,7 @@ public class StaticServerAnalysis implements ServerAnalysis {
   public StaticServerAnalysis() {
     exeService = Executors.newSingleThreadExecutor();
     analysisList = new ArrayList<CodeAnalysis>();
+    progFilesAbsPaths = new HashSet<>();
   }
 
   @Override
@@ -66,13 +69,21 @@ public class StaticServerAnalysis implements ServerAnalysis {
 
       MagpieServer server = (MagpieServer) consumer;
 
-      setClassPath(server);
+      progFilesAbsPaths.clear();
+      setClassPath(server, files);
 
-      Collection<String> args = new ArrayList<String>();
+      Collection<String> args = new LinkedHashSet<String>();
 
-      args.add("-classpath");
-      args.add(totalClassPath);
+      args.add("-nowarn");
 
+      if(!totalClassPath.equals("")) {
+        args.add("-classpath");
+        args.add(totalClassPath);
+      }
+
+      for (String path : progFilesAbsPaths) {
+        args.add(path);
+      }
 
       for (Module file : files) {
         if (file instanceof SourceFileModule) {
@@ -92,9 +103,11 @@ public class StaticServerAnalysis implements ServerAnalysis {
       LOG.info("Checker completed with execCode " + execCode);
       
       //ANALYZE
+      server.cleanUp();
       try {
-        Collection<AnalysisResult> results = new ArrayList(Collections.emptyList());
         for (CodeAnalysis analysis : analysisList) {
+          Collection<AnalysisResult> results = new ArrayList(Collections.emptyList());
+
           for (Module file : files) {
             if (file instanceof SourceFileModule) {
               SourceFileModule sourceFile = (SourceFileModule) file;
@@ -103,10 +116,8 @@ public class StaticServerAnalysis implements ServerAnalysis {
               results.addAll(analyze(sourceFile, clientURL, analysis, jChecker));
             }
           }
+          server.consume(results, source());
         }
-
-        server.cleanUp();
-        server.consume(results, source());
       } catch(MalformedURLException e) {
         e.printStackTrace();
       }
@@ -118,7 +129,7 @@ public class StaticServerAnalysis implements ServerAnalysis {
    *
    * @param server
    */
-  public void setClassPath(MagpieServer server) {
+  public void setClassPath(MagpieServer server, Collection<? extends Module> files) {
     if (srcPath == null) {
       Optional<IProjectService> opt = server.getProjectService("java");
       if (opt.isPresent()) {
@@ -130,19 +141,56 @@ public class StaticServerAnalysis implements ServerAnalysis {
           ps.getLibraryPath().stream().forEach(path -> libPath.add(path.toString()));
         }
         if (!sourcePath.isEmpty()) {
+          totalClassPath = ".";
+
           Set<String> temp = new HashSet<>();
           sourcePath.stream().forEach(path -> temp.add(path.toString()));
           srcPath = temp;
 
-          Set<Path> cp = ps.getClassPath();
-          totalClassPath = "\".";
-          for (Path p : cp) {
-            LOG.info("cp: " + p.toString());
-            totalClassPath += ";" + p.toString();
-            if(new File(p.toString()).isDirectory()) totalClassPath += "/**.jar";
+          Set<String> requestedFiles = new HashSet<>();
+          for (Module file : files) {
+            if (file instanceof SourceFileModule) {
+              SourceFileModule sourceFile = (SourceFileModule) file;
+              
+              requestedFiles.add(sourceFile.getClassName() + ".java");
+            }
+          }
+ 
+          Iterator<String> srcIt = srcPath.iterator();
+
+          if(srcIt.hasNext()) {
+            String src =  srcIt.next();
+            Collection<String> srcJavas = getJavaFilesForFolder(new File(src), ".java");
+            for (String javaPath : srcJavas) {
+              if(!requestedFiles.contains(getFileNameFromPath(javaPath)) && !progFilesAbsPaths.contains(javaPath)) 
+                progFilesAbsPaths.add(javaPath);
+            }
           }
 
-          totalClassPath += ";" + srcPath.iterator().next() + "/**.java\"";
+          if(!libPath.isEmpty()) {
+            Iterator<String> libIt = libPath.iterator();
+            while(libIt.hasNext()) {
+              String lib =  libIt.next();             
+              Set<String> libJars = new HashSet<>(getJavaFilesForFolder(new File(lib), ".jar"));
+              for (String jarPath : libJars) {
+                totalClassPath += ";" + jarPath;
+              }
+            }
+          }
+
+          Set<Path> cp = ps.getClassPath();
+          for (Path p : cp) {
+            totalClassPath += ";" + p.toString();
+          }
+
+          Optional<Path> root = ps.getRootPath();
+          if(root.isPresent()) {
+            String rootPath = root.get().toString();
+            Set<String> ecp = new HashSet<>(getJavaFilesForFolder(new File(rootPath), ".jar"));
+            for (String p : ecp) {
+              totalClassPath += ";" + p;
+            }
+          }
         }
       }
     }
@@ -164,18 +212,28 @@ public class StaticServerAnalysis implements ServerAnalysis {
     analysisList.add(analysis);
   }
 
-  private Collection<String> listFilesForFolder(final File folder) {
+  private Collection<String> getJavaFilesForFolder(final File folder, String ext) {
     Collection<String> files = new HashSet<>();
-
-    for (final File fileEntry : folder.listFiles()) {
+    if(folder.isDirectory()) {
+      for (final File fileEntry : folder.listFiles()) {
         if (fileEntry.isDirectory()) {
-            files.addAll(listFilesForFolder(fileEntry));
-        } else {
-            files.add(fileEntry.getAbsolutePath());
+          files.addAll(getJavaFilesForFolder(fileEntry, ext));
+        } else if(fileEntry.getName().endsWith(ext)){
+          files.add(fileEntry.getAbsolutePath());
         }
+      }
+    } else if(folder.getName().endsWith(ext)) {
+      files.add(folder.getAbsolutePath());
     }
 
     return files;
-}
+  }
+
+  private String getFileNameFromPath(String path) {
+    File f = new File(path);
+    if(f.isFile())
+      return f.getName();
+    return "";
+  }
 
 }
