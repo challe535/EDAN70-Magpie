@@ -1,10 +1,12 @@
 # Files
 .project
 .classpath
+test.txt
 
 # Directories
 build
 bin
+eval
 
 .gradle
 **/.vscode
@@ -17,3 +19,4 @@ vscode/out
 vscode/*.jar
 vscode/*.vsix
 vscode/package-lock.json
+

@@ -27,7 +27,6 @@ import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
 
 public class DAAnalysis implements CodeAnalysis {
-    private static final Logger LOG = Logger.getLogger("main");
     private Collection<AnalysisResult> results;
 
     private static final Analysis ANALYSIS_TYPE = Analysis.DAA;
@@ -54,7 +53,6 @@ public class DAAnalysis implements CodeAnalysis {
                 try {
                     code = MySourceCodeReader.getLinesInString(position);
                 } catch (Exception e) {
-                    LOG.warning("Error retrieving code from source file");
                     e.printStackTrace();
                 }
 
@@ -73,6 +71,11 @@ public class DAAnalysis implements CodeAnalysis {
     @Override
     public Collection<AnalysisResult> getResult() {
         return results;
+    }
+
+    @Override
+    public String getName() {
+        return "DAA";
     }
     
 }

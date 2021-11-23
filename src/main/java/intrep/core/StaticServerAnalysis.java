@@ -1,12 +1,14 @@
 package intrep.core;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.cert.PKIXRevocationChecker.Option;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Optional;
@@ -17,6 +19,9 @@ import java.util.concurrent.Future;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
 
 import com.ibm.wala.classLoader.Module;
 import com.ibm.wala.classLoader.ModuleEntry;
@@ -24,7 +29,9 @@ import com.ibm.wala.classLoader.SourceFileModule;
 
 import org.extendj.JavaChecker;
 import org.extendj.ast.CompilationUnit;
-import org.extendj.ast.List;
+
+import intrep.eval.SimpleFileWriter;
+
 import org.extendj.IntraJ;
 
 import magpiebridge.core.AnalysisConsumer;
@@ -32,6 +39,8 @@ import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.IProjectService;
 import magpiebridge.core.MagpieServer;
 import magpiebridge.core.ServerAnalysis;
+import magpiebridge.core.analysis.configuration.ConfigurationOption;
+import magpiebridge.core.analysis.configuration.OptionType;
 import magpiebridge.projectservice.java.JavaProjectService;
 /**
  * 
@@ -45,14 +54,21 @@ public class StaticServerAnalysis implements ServerAnalysis {
   private Set<String> progFilesAbsPaths;
   private String totalClassPath;
   private ExecutorService exeService;
-  private Future<?> last;
+  private Collection<Future<?>> last;
+  private Boolean shouldEval = false;
 
+  private static Map<String, Boolean> activeAnalyses;
   private static Collection<CodeAnalysis> analysisList;
+
+  private int iterations = 1;
+  private double[] timings;
 
   public StaticServerAnalysis() {
     exeService = Executors.newSingleThreadExecutor();
     analysisList = new ArrayList<CodeAnalysis>();
     progFilesAbsPaths = new HashSet<>();
+    last = new ArrayList<>(analysisList.size());
+    activeAnalyses = new HashMap<>();
   }
 
   @Override
@@ -63,65 +79,121 @@ public class StaticServerAnalysis implements ServerAnalysis {
   @Override
   public void analyze(Collection<? extends Module> files, AnalysisConsumer consumer, boolean rerun) {
     if(rerun) {
+      if(shouldEval) {
+        LOG.info("\n==================\nSTARTING ANALYSIS\n==================\n");
+        timings = new double[iterations];
 
-      //COMPILE
-      IntraJ jChecker  = new IntraJ();
+        for(int i = 0; i < iterations; i++) {
+          double time = System.currentTimeMillis();
 
-      MagpieServer server = (MagpieServer) consumer;
+          //if analysis iteration fails - redo iteration
+          if(!doSingleAnalysisIteration(files, consumer)) {
+            i--;
+            continue;
+          }
 
-      progFilesAbsPaths.clear();
-      setClassPath(server, files);
+          //Wait for all analysis threads
+          boolean done = true;
+          while(!done) {
+            boolean temp = true;
+            for(Future<?> f : last) {
+              temp &= f.isDone();
+            }
+            done = temp;
+          }
 
-      Collection<String> args = new LinkedHashSet<String>();
-
-      args.add("-nowarn");
-
-      if(!totalClassPath.equals("")) {
-        args.add("-classpath");
-        args.add(totalClassPath);
-      }
-
-      for (String path : progFilesAbsPaths) {
-        args.add(path);
-      }
-
-      for (Module file : files) {
-        if (file instanceof SourceFileModule) {
-          SourceFileModule sourceFile = (SourceFileModule) file;
-          
-          args.add(sourceFile.getAbsolutePath());
+          //record time
+          timings[i] = System.currentTimeMillis() - time;
         }
+
+        //Write recorded data to file
+        SimpleFileWriter writer = new SimpleFileWriter("test.txt");
+        for(int i = 0; i < iterations; i++) {
+          writer.appendLn(String.valueOf(timings[i]));
+        }
+        writer.close();
+
+        LOG.info("\n==================\nFINISHED ANALYSIS\n==================\n");
+      } else {
+        doSingleAnalysisIteration(files, consumer);
       }
+    }
+  }
 
-      int i = 1;
-      for (String arg : args) {
-        LOG.info("arg" + i + " : " + arg);
-        i++;
+  private boolean doSingleAnalysisIteration(Collection<? extends Module> files, AnalysisConsumer consumer) {
+    //COMPILE
+    IntraJ jChecker  = new IntraJ();
+
+    MagpieServer server = (MagpieServer) consumer;
+
+    progFilesAbsPaths.clear();
+
+    setClassPath(server, files);
+
+    Collection<String> args = new LinkedHashSet<String>();
+
+    args.add("-nowarn");
+
+    if(!totalClassPath.equals("")) {
+      args.add("-classpath");
+      args.add(totalClassPath);
+    }
+
+    for (String path : progFilesAbsPaths) {
+      args.add(path);
+    }
+
+    for (Module file : files) {
+      if (file instanceof SourceFileModule) {
+        SourceFileModule sourceFile = (SourceFileModule) file;
+        
+        args.add(sourceFile.getAbsolutePath());
       }
+    }
 
-      int execCode = jChecker.run(args.toArray(new String[args.size()]));
-      LOG.info("Checker completed with execCode " + execCode);
-      
-      //ANALYZE
-      server.cleanUp();
-      try {
-        for (CodeAnalysis analysis : analysisList) {
-          Collection<AnalysisResult> results = new ArrayList(Collections.emptyList());
+    int execCode = jChecker.run(args.toArray(new String[args.size()]));
+    LOG.info("Checker completed with execCode " + execCode);
+    if(shouldEval && execCode == 4) {
+      return false;
+    }
+    
+    //ANALYZE
+    server.cleanUp();
+    for(Future<?> f : last) {
+      if(f != null && !f.isDone()) {
+        f.cancel(false);
+      if (f.isCancelled())
+        LOG.info("Susscessfully cancelled last analysis and start new");
+      }
+    }
 
+    last.clear();
+
+    for (CodeAnalysis analysis : analysisList) {
+      if(!activeAnalyses.get(analysis.getName()))
+        continue;
+
+      last.add(exeService.submit(new Runnable() {
+        @Override
+        public void run() {
+          Collection<AnalysisResult> results = new ArrayList<>(Collections.emptyList());
           for (Module file : files) {
             if (file instanceof SourceFileModule) {
               SourceFileModule sourceFile = (SourceFileModule) file;
-              final URL clientURL = new URL(server.getClientUri(sourceFile.getURL().toString()));
-
-              results.addAll(analyze(sourceFile, clientURL, analysis, jChecker));
+              try {
+                final URL clientURL = new URL(server.getClientUri(sourceFile.getURL().toString()));
+                results.addAll(analyze(sourceFile, clientURL, analysis, jChecker));
+              } catch(MalformedURLException e) {
+                e.printStackTrace();
+              }
             }
           }
           server.consume(results, source());
         }
-      } catch(MalformedURLException e) {
-        e.printStackTrace();
-      }
+      }));
     }
+
+    return true;
   }
 
   /**
@@ -201,15 +273,16 @@ public class StaticServerAnalysis implements ServerAnalysis {
 
     for (CompilationUnit cu : jChecker.getEntryPoint().getCompilationUnits()) {
       if(cu.getClassSource().sourceName().equals(file.getAbsolutePath())) {
-        LOG.info("Performing analysis");
         analysis.doAnalysis(cu, clientURL);
       }
     }
+
     return analysis.getResult();
   }
 
   public static void addAnalysis(CodeAnalysis analysis) {
     analysisList.add(analysis);
+    activeAnalyses.put(analysis.getName(), true);
   }
 
   private Collection<String> getJavaFilesForFolder(final File folder, String ext) {
@@ -234,6 +307,47 @@ public class StaticServerAnalysis implements ServerAnalysis {
     if(f.isFile())
       return f.getName();
     return "";
+  }
+
+  @Override
+  public List<ConfigurationOption> getConfigurationOptions() { 
+    List<ConfigurationOption> options = new ArrayList<>();
+    ConfigurationOption evalActive = new ConfigurationOption("Evaluation mode", OptionType.checkbox); 
+    ConfigurationOption evalIter = new ConfigurationOption("Evalutaion iterations", OptionType.text, "1");
+    evalActive.addChild(evalIter);
+
+    ConfigurationOption analyses = new ConfigurationOption("Analyses", OptionType.container);
+
+    for (CodeAnalysis a : analysisList) {
+      analyses.addChild(new ConfigurationOption(a.getName(), OptionType.checkbox, "true"));
+    }
+
+    options.add(evalActive);
+    options.add(analyses);
+
+    return options;
+  }
+
+  @Override
+  public void configure(List<ConfigurationOption> configuration) {
+      for (ConfigurationOption o : configuration){
+          switch(o.getName()) {
+            case "Evaluation mode": shouldEval = o.getValueAsBoolean(); 
+              if(shouldEval) 
+                iterations = Integer.parseInt(o.getChildren().get(0).getValue());
+              break;
+            case "Evaluation iterations": ;
+              LOG.info(String.valueOf(iterations));
+              break;
+            case "Analyses": 
+              for(ConfigurationOption c : o.getChildren()) {
+                activeAnalyses.put(c.getName(), c.getValueAsBoolean());
+              }
+              break;
+            default:
+              LOG.warning("No configuration case mathcing " + o.getName());
+          }    
+      } 
   }
 
 }

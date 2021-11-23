@@ -27,7 +27,6 @@ import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
 
 public class NPAnalysis implements CodeAnalysis {
-    private static final Logger LOG = Logger.getLogger("main");
     private Collection<AnalysisResult> results;
 
     private static final Analysis ANALYSIS_TYPE = Analysis.NPA;
@@ -54,7 +53,6 @@ public class NPAnalysis implements CodeAnalysis {
                 try {
                     code = MySourceCodeReader.getLinesInString(position);
                 } catch (Exception e) {
-                    LOG.warning("Error retrieving code from source file");
                     e.printStackTrace();
                 }
 
@@ -67,5 +65,10 @@ public class NPAnalysis implements CodeAnalysis {
     @Override
     public Collection<AnalysisResult> getResult() {
         return results;
+    }
+
+    @Override
+    public String getName() {
+        return "NPA";
     }
 }

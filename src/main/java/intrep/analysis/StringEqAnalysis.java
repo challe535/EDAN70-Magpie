@@ -24,7 +24,6 @@ import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
 
 public class StringEqAnalysis implements CodeAnalysis {
-  private static final Logger LOG = Logger.getLogger("main");
   private Collection<AnalysisResult> results;
 
   public StringEqAnalysis() {
@@ -47,7 +46,6 @@ public class StringEqAnalysis implements CodeAnalysis {
             try {
                 code = MySourceCodeReader.getLinesInString(position);
             } catch (Exception e) {
-                LOG.warning("Error retrieving code from source file");
                 e.printStackTrace();
             }
 
@@ -75,6 +73,9 @@ public class StringEqAnalysis implements CodeAnalysis {
       return results;
   }
 
-  
+  @Override
+  public String getName() {
+      return "StringEQ";
+  }
 
 }

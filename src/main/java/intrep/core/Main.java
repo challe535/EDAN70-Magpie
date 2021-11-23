@@ -30,6 +30,7 @@ public class Main {
     config.setDoAnalysisByFirstOpen(true);
     config.setDoAnalysisByOpen(false);
 
+    config.setShowConfigurationPage(true, true);
     MagpieServer server = new MagpieServer(config);
     String language = "java";
     IProjectService javaProjectService = new JavaProjectService();

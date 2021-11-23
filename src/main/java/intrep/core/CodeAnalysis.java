@@ -11,4 +11,6 @@ public interface CodeAnalysis {
     public void doAnalysis(CompilationUnit cu, URL url);
 
     public Collection<AnalysisResult> getResult();
+
+    public String getName();
 }
