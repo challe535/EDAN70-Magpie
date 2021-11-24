@@ -3,12 +3,11 @@ package intrep.core;
 import java.net.URL;
 import java.util.Collection;
 
-import org.extendj.ast.CompilationUnit;
 import magpiebridge.core.AnalysisResult;
 
-public interface CodeAnalysis {
+public interface CodeAnalysis<T> {
     
-    public void doAnalysis(CompilationUnit cu, URL url);
+    public void doAnalysis(T cu, URL url);
 
     public Collection<AnalysisResult> getResult();
 

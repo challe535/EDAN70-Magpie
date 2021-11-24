@@ -26,7 +26,7 @@ import org.extendj.ast.WarningMsg;
 import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
 
-public class NPAnalysis implements CodeAnalysis {
+public class NPAnalysis implements CodeAnalysis<CompilationUnit> {
     private Collection<AnalysisResult> results;
 
     private static final Analysis ANALYSIS_TYPE = Analysis.NPA;

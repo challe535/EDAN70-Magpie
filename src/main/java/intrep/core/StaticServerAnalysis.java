@@ -1,39 +1,28 @@
 package intrep.core;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.security.cert.PKIXRevocationChecker.Option;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
 
 import com.ibm.wala.classLoader.Module;
-import com.ibm.wala.classLoader.ModuleEntry;
 import com.ibm.wala.classLoader.SourceFileModule;
 
-import org.extendj.JavaChecker;
-import org.extendj.ast.CompilationUnit;
-
 import intrep.eval.SimpleFileWriter;
-
-import org.extendj.IntraJ;
-
 import magpiebridge.core.AnalysisConsumer;
 import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.IProjectService;
@@ -57,18 +46,22 @@ public class StaticServerAnalysis implements ServerAnalysis {
   private Collection<Future<?>> last;
   private Boolean shouldEval = false;
 
+  private AnalysisFramework framework;
+
   private static Map<String, Boolean> activeAnalyses;
-  private static Collection<CodeAnalysis> analysisList;
+  private static Collection<CodeAnalysis<?>> analysisList;
 
   private int iterations = 1;
   private double[] timings;
 
   public StaticServerAnalysis() {
     exeService = Executors.newSingleThreadExecutor();
-    analysisList = new ArrayList<CodeAnalysis>();
+    analysisList = new ArrayList<CodeAnalysis<?>>();
     progFilesAbsPaths = new HashSet<>();
     last = new ArrayList<>(analysisList.size());
     activeAnalyses = new HashMap<>();
+
+    framework = new IntraJFramework();
   }
 
   @Override
@@ -121,43 +114,22 @@ public class StaticServerAnalysis implements ServerAnalysis {
   }
 
   private boolean doSingleAnalysisIteration(Collection<? extends Module> files, AnalysisConsumer consumer) {
-    //COMPILE
-    IntraJ jChecker  = new IntraJ();
-
     MagpieServer server = (MagpieServer) consumer;
-
     progFilesAbsPaths.clear();
-
     setClassPath(server, files);
+   
+    //Setup analysis framework and run
+    framework.setup(files, totalClassPath, srcPath, progFilesAbsPaths); 
+    int exitCode = framework.run();
 
-    Collection<String> args = new LinkedHashSet<String>();
-
-    args.add("-nowarn");
-
-    if(!totalClassPath.equals("")) {
-      args.add("-classpath");
-      args.add(totalClassPath);
-    }
-
-    for (String path : progFilesAbsPaths) {
-      args.add(path);
-    }
-
-    for (Module file : files) {
-      if (file instanceof SourceFileModule) {
-        SourceFileModule sourceFile = (SourceFileModule) file;
-        
-        args.add(sourceFile.getAbsolutePath());
-      }
-    }
-
-    int execCode = jChecker.run(args.toArray(new String[args.size()]));
-    LOG.info("Checker completed with execCode " + execCode);
-    if(shouldEval && execCode == 4) {
+    LOG.info(" completed with exitCode " + exitCode);
+    if(shouldEval && exitCode == 4) {
       return false;
     }
     
     //ANALYZE
+
+    //Clean up previous analysis results and ongoing analyses
     server.cleanUp();
     for(Future<?> f : last) {
       if(f != null && !f.isDone()) {
@@ -166,9 +138,9 @@ public class StaticServerAnalysis implements ServerAnalysis {
         LOG.info("Susscessfully cancelled last analysis and start new");
       }
     }
-
     last.clear();
 
+    //Initiate analyses on seperate threads and set them running
     for (CodeAnalysis analysis : analysisList) {
       if(!activeAnalyses.get(analysis.getName()))
         continue;
@@ -182,7 +154,7 @@ public class StaticServerAnalysis implements ServerAnalysis {
               SourceFileModule sourceFile = (SourceFileModule) file;
               try {
                 final URL clientURL = new URL(server.getClientUri(sourceFile.getURL().toString()));
-                results.addAll(analyze(sourceFile, clientURL, analysis, jChecker));
+                results.addAll(framework.analyze(sourceFile, clientURL, analysis));
               } catch(MalformedURLException e) {
                 e.printStackTrace();
               }
@@ -268,19 +240,7 @@ public class StaticServerAnalysis implements ServerAnalysis {
     }
   }
 
-
-  public Collection<AnalysisResult> analyze(SourceFileModule file, URL clientURL, CodeAnalysis analysis, IntraJ jChecker) {
-
-    for (CompilationUnit cu : jChecker.getEntryPoint().getCompilationUnits()) {
-      if(cu.getClassSource().sourceName().equals(file.getAbsolutePath())) {
-        analysis.doAnalysis(cu, clientURL);
-      }
-    }
-
-    return analysis.getResult();
-  }
-
-  public static void addAnalysis(CodeAnalysis analysis) {
+  public static void addAnalysis(CodeAnalysis<?> analysis) {
     analysisList.add(analysis);
     activeAnalyses.put(analysis.getName(), true);
   }

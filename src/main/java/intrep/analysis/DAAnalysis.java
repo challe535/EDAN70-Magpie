@@ -26,7 +26,7 @@ import org.extendj.ast.WarningMsg;
 import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
 
-public class DAAnalysis implements CodeAnalysis {
+public class DAAnalysis implements CodeAnalysis<CompilationUnit> {
     private Collection<AnalysisResult> results;
 
     private static final Analysis ANALYSIS_TYPE = Analysis.DAA;

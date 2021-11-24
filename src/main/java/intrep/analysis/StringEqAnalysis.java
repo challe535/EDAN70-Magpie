@@ -23,7 +23,7 @@ import com.ibm.wala.util.collections.Pair;
 import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
 
-public class StringEqAnalysis implements CodeAnalysis {
+public class StringEqAnalysis implements CodeAnalysis<CompilationUnit> {
   private Collection<AnalysisResult> results;
 
   public StringEqAnalysis() {
