@@ -6,7 +6,7 @@ test.txt
 # Directories
 build
 bin
-eval
+/eval/
 
 .gradle
 **/.vscode
