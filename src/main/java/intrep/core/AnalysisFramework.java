@@ -10,7 +10,7 @@ import com.ibm.wala.classLoader.SourceFileModule;
 import magpiebridge.core.AnalysisResult;
 
 public interface AnalysisFramework {
-    public void setup(Collection<? extends Module> files, String classPath, Set<String> srcPath, Set<String> progPath);
+    public void setup(Collection<? extends Module> files, String classPath, Set<String> srcPath, Set<String> libPath, Set<String> progPath);
 
     public int run();
 

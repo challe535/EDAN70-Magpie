@@ -19,4 +19,4 @@ vscode/out
 vscode/*.jar
 vscode/*.vsix
 vscode/package-lock.json
-
+.VSCodeCounter

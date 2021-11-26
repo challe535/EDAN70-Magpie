@@ -61,6 +61,7 @@ public class StaticServerAnalysis implements ServerAnalysis {
     last = new ArrayList<>(analysisList.size());
     activeAnalyses = new HashMap<>();
 
+    //framework = new IntraJFramework();
     framework = new IntraJFramework();
   }
 
@@ -119,10 +120,10 @@ public class StaticServerAnalysis implements ServerAnalysis {
     setClassPath(server, files);
    
     //Setup analysis framework and run
-    framework.setup(files, totalClassPath, srcPath, progFilesAbsPaths); 
+    framework.setup(files, totalClassPath, srcPath, libPath, progFilesAbsPaths); 
     int exitCode = framework.run();
 
-    LOG.info(" completed with exitCode " + exitCode);
+    LOG.info("Framework run completed with exitCode " + exitCode);
     if(shouldEval && exitCode == 4) {
       return false;
     }

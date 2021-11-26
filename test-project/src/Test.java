@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.List;
 
 public class Test {
     public static void main(String[] args) {
@@ -21,10 +23,19 @@ public class Test {
       }else if (!b){
           s = "Tuesday";
       }
-      System.out.println(s.length());
+      
+      int i = s.length();
+
+      Boolean ok = null;
+
+      if(ok) System.out.println("ok");
 
       Other o = new Other();
 
+      List<Object> l = new ArrayList<>();
+
+      System.out.println(l.size());
+      
       o.deadAssignment();
       o.doNothing();
       o.compareStr(s1, s2);
