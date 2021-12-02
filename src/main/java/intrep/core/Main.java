@@ -1,10 +1,14 @@
 package intrep.core;
 
-import com.google.common.base.Supplier;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
 
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 import intrep.analysis.AnalysisInjector;
+import intrep.core.magpiebridge.StaticServerAnalysis;
 import magpiebridge.core.IProjectService;
 import magpiebridge.core.MagpieServer;
 import magpiebridge.core.ServerAnalysis;
@@ -26,8 +30,15 @@ public class Main {
     ServerConfiguration config = new ServerConfiguration();
 
     //setup server config for analysis triggering
+    try {
+      File logFile = Files.createTempFile("magpie_server_trace", ".lsp").toFile();
+      config.setLSPMessageTracer(new PrintWriter(logFile));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
     config.setDoAnalysisBySave(true);
-    config.setDoAnalysisByFirstOpen(true);
+    config.setDoAnalysisByFirstOpen(false);
     config.setDoAnalysisByOpen(false);
 
     config.setShowConfigurationPage(true, true);

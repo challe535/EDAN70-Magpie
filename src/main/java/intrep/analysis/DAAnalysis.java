@@ -1,9 +1,9 @@
 package intrep.analysis;
 
 import intrep.core.CodeAnalysis;
-import intrep.core.MySourceCodeReader;
-import intrep.core.Result;
-import intrep.core.ResultPosition;
+import intrep.util.MySourceCodeReader;
+import intrep.core.magpiebridge.Result;
+import intrep.core.magpiebridge.ResultPosition;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -38,15 +38,16 @@ public class DAAnalysis implements CodeAnalysis<CompilationUnit> {
     @Override
     public void doAnalysis(CompilationUnit cu, URL url) {
         results.clear();
-        
+
         try {
-            TreeSet<WarningMsg> wmgs = (TreeSet<WarningMsg>)cu.getClass()
-                                        .getDeclaredMethod(ANALYSIS_TYPE.toString())
-                                        .invoke(cu);     
+            TreeSet<WarningMsg> wmgs = (TreeSet<WarningMsg>) cu.getClass()
+                    .getDeclaredMethod(ANALYSIS_TYPE.toString())
+                    .invoke(cu);
 
             for (WarningMsg wm : wmgs) {
 
-                ResultPosition position = new ResultPosition(wm.lineStart, wm.lineEnd, wm.columnStart, wm.columnEnd, url);
+                ResultPosition position = new ResultPosition(wm.lineStart, wm.lineEnd, wm.columnStart, wm.columnEnd,
+                        url);
                 List<Pair<Position, String>> relatedInfo = new ArrayList<>();
 
                 String code = "no code";
@@ -62,10 +63,11 @@ public class DAAnalysis implements CodeAnalysis<CompilationUnit> {
 
                 Pair<Position, String> repair = Pair.make(repairPos, correctCode);
 
-                results.add(new Result(Kind.Diagnostic, position, wm.errMsg, relatedInfo, DiagnosticSeverity.Warning, repair, code));
+                results.add(new Result(Kind.Diagnostic, position, wm.errMsg, relatedInfo, DiagnosticSeverity.Warning,
+                        repair, code));
             }
         } catch (Throwable t) {
-        }   
+        }
     }
 
     @Override
@@ -77,5 +79,9 @@ public class DAAnalysis implements CodeAnalysis<CompilationUnit> {
     public String getName() {
         return "DAA";
     }
-    
+
+    public static String name() {
+        return "DAA";
+    }
+
 }

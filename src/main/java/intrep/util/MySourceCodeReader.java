@@ -1,4 +1,4 @@
-package intrep.core;
+package intrep.util;
 
 import com.ibm.wala.cast.tree.CAstSourcePositionMap.Position;
 import java.io.BufferedReader;

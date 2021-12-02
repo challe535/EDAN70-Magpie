@@ -17,10 +17,11 @@ public class Test {
       boolean b = s3 == s2;
       boolean c = b;
 
+      Other o = new Other();
       String s = null;
       if (b){
           s = "Monday";
-      }else if (!b){
+      }else if (s3.equals(s1)){
           s = "Tuesday";
       }
       
@@ -30,10 +31,7 @@ public class Test {
 
       if(ok) System.out.println("ok");
 
-      Other o = new Other();
-
       List<Object> l = new ArrayList<>();
-
       System.out.println(l.size());
       
       o.deadAssignment();

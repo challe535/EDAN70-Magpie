@@ -1,4 +1,4 @@
-package intrep.core;
+package intrep.core.magpiebridge;
 
 import com.ibm.wala.cast.tree.CAstSourcePositionMap.Position;
 import com.ibm.wala.util.collections.Pair;
@@ -8,11 +8,6 @@ import org.eclipse.lsp4j.DiagnosticSeverity;
 import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
 
-/**
- * 
- * @author Linghui Luo
- *
- */
 public class Result implements AnalysisResult {
 
   private final Kind kind;

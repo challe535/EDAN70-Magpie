@@ -9,10 +9,22 @@ import com.ibm.wala.classLoader.SourceFileModule;
 
 import magpiebridge.core.AnalysisResult;
 
-public interface AnalysisFramework {
-    public void setup(Collection<? extends Module> files, String classPath, Set<String> srcPath, Set<String> libPath, Set<String> progPath);
+public abstract class AnalysisFramework {
+    public abstract void setup(Collection<? extends Module> files, Set<String> classPath, Set<String> srcPath, Set<String> libPath, Set<String> progPath);
 
-    public int run();
+    public abstract int run();
 
-    public Collection<AnalysisResult> analyze(SourceFileModule file, URL clientURL, CodeAnalysis analysis);
+    public abstract Collection<AnalysisResult> analyze(SourceFileModule file, URL clientURL, CodeAnalysis analysis);
+
+    public abstract String frameworkName();
+
+    protected String calculateClassPathString(Set<String> classPath) {
+        StringBuilder sb = new StringBuilder();
+        for (String path : classPath) {
+            sb.append(path);
+            sb.append(";");
+        }
+
+        return sb.toString();
+    }
 }

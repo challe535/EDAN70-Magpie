@@ -31,7 +31,6 @@ dependencies {
     implementation project(':IntraJ')
     implementation 'org.soot-oss:soot:4.2.1'
 
-    //implementation 'org.eclipse.core:runtime:3.3.100-v20070530'
     implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.10.0'
     implementation 'com.github.MagpieBridge:IRConverter:master-SNAPSHOT'
 }

@@ -1,6 +1,7 @@
 package intrep.analysis.soot.npa;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import soot.Local;
@@ -9,54 +10,43 @@ import soot.jimple.*;
 import soot.toolkits.graph.DirectedGraph;
 import soot.toolkits.scalar.ForwardFlowAnalysis;
 
-public class NullPointerAnalysis extends ForwardFlowAnalysis<Unit, Set<Local>> {
-    enum AnalysisMode {
-        MUST,
-        MAY_P,
-        MAY_O
-    }
-    AnalysisMode analysisMode;
-    
-    public NullPointerAnalysis(DirectedGraph graph, AnalysisMode analysisMode) {
+public class NullPointerAnalysis extends ForwardFlowAnalysis<Unit, HashSet<Local>> {
+    private HashSet<Local> params;
+
+    public NullPointerAnalysis(DirectedGraph<Unit> graph, List<Local> paramLocals) {
         super(graph);
-        this.analysisMode = analysisMode;
+        params = new HashSet<>();
+
+        for(Local l : paramLocals)
+            params.add(l);
+
         doAnalysis();
     }
 
     @Override
-    protected void flowThrough(Set<Local> inSet, Unit unit, Set<Local> outSet) {
-        copy(inSet, outSet);
-        kill(inSet, unit, outSet);
+    protected void flowThrough(HashSet<Local> inSet, Unit unit, HashSet<Local> outSet) {
+        outSet.addAll(inSet);
+        kill(outSet, unit);
         generate(inSet, unit, outSet);
     }
 
     @Override
-    protected Set<Local> newInitialFlow() {
+    protected HashSet<Local> newInitialFlow() {
         return new HashSet<Local>();
     }
 
-
     @Override
-    protected void merge(Set<Local> inSet1, Set<Local> inSet2, Set<Local> outSet) {
-        if(analysisMode != AnalysisMode.MUST) {
-            outSet.addAll(inSet1);
-            outSet.addAll(inSet2);
-        } else {
-            for (Local local : inSet1) {
-                if(inSet2.contains(local))
-                    outSet.add((Local)local.clone());
-            }
-        }
+    protected void merge(HashSet<Local> inSet1, HashSet<Local> inSet2, HashSet<Local> outSet) {
+        inSet1.addAll(inSet2);
+        outSet.addAll(inSet1);
     }
 
     @Override
-    protected void copy(Set<Local> source, Set<Local> dest) {
-        for (Local local : source) {
-            dest.add((Local)local.clone());
-        }
+    protected void copy(HashSet<Local> source, HashSet<Local> dest) {
+        dest = new HashSet<>(source);
     }
 
-    protected void kill(Set<Local> inSet, Unit unit, Set<Local> outSet){
+    protected void kill(HashSet<Local> outSet, Unit unit) {
         unit.apply(new AbstractStmtSwitch() {
             @Override
             public void caseAssignStmt(AssignStmt stmt) {
@@ -66,7 +56,7 @@ public class NullPointerAnalysis extends ForwardFlowAnalysis<Unit, Set<Local>> {
         });
     }
 
-    protected void generate(Set<Local> inSet, Unit unit, Set<Local> outSet){
+    protected void generate(Set<Local> inSet, Unit unit, Set<Local> outSet) {
         unit.apply(new AbstractStmtSwitch() {
             @Override
             public void caseAssignStmt(AssignStmt stmt) {
@@ -82,36 +72,15 @@ public class NullPointerAnalysis extends ForwardFlowAnalysis<Unit, Set<Local>> {
                     public void caseNullConstant(NullConstant v) {
                         outSet.add(leftOp);
                     }
-
-                    @Override
-                    public void caseInterfaceInvokeExpr(InterfaceInvokeExpr v) {
-                        if(analysisMode == AnalysisMode.MAY_P)
-                            outSet.add(leftOp);
-                    }
-
-                    @Override
-                    public void caseStaticInvokeExpr(StaticInvokeExpr v) {
-                        if(analysisMode == AnalysisMode.MAY_P)
-                            outSet.add(leftOp);
-                    }
-
-                    @Override
-                    public void caseVirtualInvokeExpr(VirtualInvokeExpr v) {
-                        if(analysisMode == AnalysisMode.MAY_P)
-                            outSet.add(leftOp);
-                    }
                 });
             }
 
             @Override
             public void caseIdentityStmt(IdentityStmt stmt) {
-
                 Local leftOp = (Local) stmt.getLeftOp();
-                if(analysisMode == AnalysisMode.MAY_P)
-                    if(!(stmt.getRightOp() instanceof ThisRef))
-                        outSet.add(leftOp);
+                if(!params.contains(leftOp))
+                    outSet.add(leftOp);
             }
         });
     }
 }
-

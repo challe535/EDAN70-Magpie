@@ -1,6 +1,7 @@
 # Files
 .project
 .classpath
+/test-project/*.txt
 test.txt
 
 # Directories

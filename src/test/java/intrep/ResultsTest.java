@@ -5,8 +5,6 @@ import java.util.Optional;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
-import intrep.core.Result;
-
 import magpiebridge.core.Kind;
 import magpiebridge.core.IProjectService;
 import magpiebridge.core.MagpieServer;

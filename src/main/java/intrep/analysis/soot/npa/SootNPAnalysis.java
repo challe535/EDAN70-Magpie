@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.eclipse.lsp4j.DiagnosticSeverity;
 
@@ -14,8 +13,8 @@ import com.ibm.wala.cast.tree.CAstSourcePositionMap.Position;
 import com.ibm.wala.util.collections.Pair;
 
 import intrep.core.CodeAnalysis;
-import intrep.core.MySourceCodeReader;
-import intrep.core.Result;
+import intrep.util.MySourceCodeReader;
+import intrep.core.magpiebridge.Result;
 
 import magpiebridge.converter.sourceinfo.StmtPositionInfo;
 import magpiebridge.converter.tags.StmtPositionInfoTag;
@@ -30,7 +29,7 @@ import soot.toolkits.graph.TrapUnitGraph;
 import soot.toolkits.graph.UnitGraph;
 
 public class SootNPAnalysis implements CodeAnalysis<Body> {
-    private static final Logger LOG = Logger.getLogger("main");
+    // private static final Logger LOG = Logger.getLogger("main");
     Collection<AnalysisResult> results;
 
     public SootNPAnalysis() {
@@ -42,49 +41,54 @@ public class SootNPAnalysis implements CodeAnalysis<Body> {
         results.clear();
         UnitGraph graph = new TrapUnitGraph(cu);
 
-        List<NullPointerAnalysis> npAnalyses = new ArrayList<>();
-        npAnalyses.add(new NullPointerAnalysis(graph, NullPointerAnalysis.AnalysisMode.MUST));
-        npAnalyses.add(new NullPointerAnalysis(graph, NullPointerAnalysis.AnalysisMode.MAY_O));
-        npAnalyses.add(new NullPointerAnalysis(graph, NullPointerAnalysis.AnalysisMode.MAY_P));
+        // LOG.info("Getting params");
+        List<Local> ls = cu.getParameterLocals();
 
-        LOG.info("Completed SootNPA analyses");
+        // LOG.info("Starting SootNPA analyses");
+        NullPointerAnalysis npa = new NullPointerAnalysis(graph, ls);
+
+        // LOG.info("Completed SootNPA analyses");
 
         int npWarnCount = 0;
-        for(Unit unit : cu.getUnits()){
-            for(ValueBox usedValueBox : unit.getUseBoxes()){
-                if(usedValueBox.getValue() instanceof Local){
+        for (Unit unit : cu.getUnits()) {
+            for (ValueBox usedValueBox : unit.getUseBoxes()) {
+                if (usedValueBox.getValue() instanceof Local) {
                     Local usedLocal = (Local) usedValueBox.getValue();
-                    for(NullPointerAnalysis npa: npAnalyses){
-                        if(npa.getFlowBefore(unit).contains(usedLocal)){
-                            StmtPositionInfo pos = ((StmtPositionInfoTag)unit.getTag("StmtPositionInfoTag")).getStmtPositionInfo();
-                            String code = "no code";
-                            try {
-                                code = MySourceCodeReader.getLinesInString(pos.getStmtPosition());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                    if (npa.getFlowBefore(unit).contains(usedLocal)) {
+                        StmtPositionInfo pos = ((StmtPositionInfoTag) unit.getTag("StmtPositionInfoTag"))
+                                .getStmtPositionInfo();
 
-                            String msg = "Soot::Possible NullPointer usage; Variable " + usedLocal.getName() + " may be null";
-                            List<Pair<Position, String>> relatedInfo = new ArrayList<>();
+                        // LOG.info("NP found on:\n" +
+                        // "url: " + url + "\n" +
+                        // "lineStart: " + pos.getStmtPosition().getFirstLine() + "\n" +
+                        // "colStart: " + pos.getStmtPosition().getFirstCol() + "\n" +
+                        // "lineEnd: " + pos.getStmtPosition().getLastLine() + "\n" +
+                        // "colEnd: " + pos.getStmtPosition().getLastCol() + "\n");
 
-                            LOG.info("NP found on:\n" +
-                                     "url: " + url + "\n" +
-                                     "lineStart: " + pos.getStmtPosition().getFirstLine() +"\n"+
-                                     "colStart: " + pos.getStmtPosition().getFirstCol() +"\n"+
-                                     "lineEnd: " + pos.getStmtPosition().getLastLine() +"\n"+
-                                     "colEnd: " + pos.getStmtPosition().getLastCol() +"\n"
-                                    );
-                            
-                            results.add(new Result(Kind.Diagnostic, pos.getStmtPosition(), msg, relatedInfo, DiagnosticSeverity.Warning, null, code));
-
-                            npWarnCount++;
+                        if(pos.getStmtPosition().getFirstLine() == -1)
+                            continue;
+                        
+                        String code = "no code";
+                        try {
+                            code = MySourceCodeReader.getLinesInString(pos.getStmtPosition());
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
+
+                        String msg = "Soot::Possible NullPointer usage; Variable " + usedLocal.getName()
+                                + " may be null";
+                        List<Pair<Position, String>> relatedInfo = new ArrayList<>();
+
+                        results.add(new Result(Kind.Diagnostic, pos.getStmtPosition(), msg, relatedInfo,
+                                DiagnosticSeverity.Warning, null, code));
+
+                        npWarnCount++;
                     }
                 }
             }
         }
 
-        LOG.info("Ended SootNPAnalysis with " + npWarnCount + " warnings");
+        // LOG.info("Ended SootNPAnalysis with " + npWarnCount + " warnings");
     }
 
     @Override
@@ -96,5 +100,9 @@ public class SootNPAnalysis implements CodeAnalysis<Body> {
     public String getName() {
         return "SootNPA";
     }
-    
+
+    public static String name() {
+        return "SootNPA";
+    }
+
 }

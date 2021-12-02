@@ -13,34 +13,24 @@ import org.extendj.ast.CompilationUnit;
 
 import magpiebridge.core.AnalysisResult;
 
-public class IntraJFramework implements AnalysisFramework {
+public class IntraJFramework extends AnalysisFramework {
   private IntraJ jChecker;
   private Collection<String> args;
 
   @Override
-  public void setup(Collection<? extends Module> files, String classPath, Set<String> srcPath, Set<String> libPath, Set<String> progPath) {
+  public void setup(Collection<? extends Module> files, Set<String> classPath, Set<String> srcPath, Set<String> libPath, Set<String> progPath) {
     jChecker = new IntraJ();
     args = new LinkedHashSet<String>();
 
     args.add("-nowarn");
 
-    //totalClassPath += ";" + srcPath;
-
-    if(!classPath.equals("")) {
+    if(!classPath.isEmpty()) {
       args.add("-classpath");
-      args.add(classPath);
+      args.add(calculateClassPathString(classPath));
     }
 
     for (String path : progPath) {
       args.add(path);
-    }
-
-    for (Module file : files) {
-      if (file instanceof SourceFileModule) {
-        SourceFileModule sourceFile = (SourceFileModule) file;
-        
-        args.add(sourceFile.getAbsolutePath());
-      }
     }
   }
 
@@ -58,6 +48,11 @@ public class IntraJFramework implements AnalysisFramework {
     }
   
     return analysis.getResult();
+  }
+
+  @Override
+  public String frameworkName(){
+    return "IntraJ";
   }
     
 }

@@ -1,4 +1,4 @@
-package intrep.core;
+package intrep.core.magpiebridge;
 
 import java.io.File;
 import java.io.FileReader;
