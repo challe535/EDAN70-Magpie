@@ -2,6 +2,14 @@ License
 -------
 This repository is covered by the license BSD 2-clause, see file LICENSE.
 
+Credits
+-------
+The following files in the repository come from:
+
+- src/main/java/intrep/util/magpiebridge/converter/: Modified converter from www.github.com/MagpieBridge/IRConverter, licensed under Eclipse Public License 2.0.
+- src/main/java/intrep/util/MySourceCodeReader.java: Modified SourceCodeReader.java from www.github.com/MagpieBridge/MagpieBridge, licensed under Eclipse Public License 2.0.
+- IntraJ/: Intraprocedural flow analysis framework from www.github.com/lu-cs-sde/IntraJ, licensed under BSD 3-Clause "New" or "Revised" License.
+
 # Build instructions
 
 ### Building for VS Code
