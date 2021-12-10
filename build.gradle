@@ -8,14 +8,6 @@ plugins {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-// sourceSets {
-//     main {
-//         java {
-//             srcDirs 'src'
-//             srcDirs 'IntraJ/build/generated-src'
-//         }
-//     }
-// }
 
 repositories {
     mavenCentral()
@@ -31,7 +23,7 @@ dependencies {
     implementation project(':IntraJ')
     implementation 'org.soot-oss:soot:4.2.1'
 
-    implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.10.0'
+    //implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.10.0'
     implementation 'com.github.MagpieBridge:IRConverter:master-SNAPSHOT'
 }
 
@@ -42,26 +34,6 @@ tasks.register('copyJastAddExtras', Copy) {
     into layout.projectDir.dir("IntraJ/src/jastadd/analysis")
 }
 build.dependsOn 'copyJastAddExtras'
-
-   
-
-
-// task submoduleInit(type:Exec) {
-//      if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-//         commandLine 'cmd', '/c', 'git_submodule_init.bat'
-//         println "DETECTED OS: windows. Running git_submodule_init.bat"
-//     }else{
-//         println "DETECTED OS: not windows. Running git_submodule_init.sh"
-//         commandLine 'sh', 'git_submodule_init.sh'
-//     }
-//     workingDir "."
-//     standardOutput = new ByteArrayOutputStream()
-
-//     ext.output = {
-//         return standardOutput.toString()
-//     }
-// }
-// build.dependsOn 'submoduleInit'
 
 
 task vsce(type:Exec) {

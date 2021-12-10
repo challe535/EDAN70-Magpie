@@ -2,6 +2,7 @@ package intrep.eval;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
@@ -38,39 +39,39 @@ public class Evaluator {
     public void eval(Collection<? extends Module> files, AnalysisConsumer consumer) {
         EvalName[] evalIterationNames = { EvalName.Base, EvalName.Compile, EvalName.Analyze };
         HashMap<AnalysisFramework, String[]> frameworksToEvaluate = new HashMap<>();
-        
-        String[] intrajAnalyses = {"NPA"};
+
+        String[] intrajAnalyses = { "NPA" };
         frameworksToEvaluate.put(new IntraJFramework(), intrajAnalyses);
 
-        String[] sootAnalyses = {"SootNPA"};
+        String[] sootAnalyses = { "SootNPA" };
         frameworksToEvaluate.put(new SootFramework(), sootAnalyses);
 
-        //Clear enabled analyses
+        // Clear enabled analyses
         clearActiveAnalyses();
 
-        //Do this once before everything else because it takes a while first time.
-        //This ensures a more fair comparison.
+        // Do this once before everything else because it takes a while first time.
+        // This ensures a more fair comparison.
         analyzer.setClassPath((MagpieServer) consumer, files);
 
-        //Start evaluating
+        // Start evaluating
         int counter = 0;
         int totalIterations = iterations * evalIterationNames.length * frameworksToEvaluate.size();
         double totalEvalTime = 0;
+        Locale locale = new Locale("en");
         LOG.info("\n==================\nSTARTING ANALYSIS\n==================\n");
         for (AnalysisFramework fw : frameworksToEvaluate.keySet()) {
             analyzer.framework = fw;
 
-            //Enable relevant analyses
-            for(String an : frameworksToEvaluate.get(fw))
+            // Enable relevant analyses
+            for (String an : frameworksToEvaluate.get(fw))
                 StaticServerAnalysis.activeAnalyses.put(an, true);
 
             for (EvalName iterName : evalIterationNames) {
                 timings = new double[iterations];
                 for (int i = 0; i < iterations; i++) {
                     counter++;
-                    double progress = 100.0 * (double)counter / (double)totalIterations;
-                    LOG.info(String.format("Eval progress: %1.2f%%", progress));
-                    double time = System.currentTimeMillis();
+                    double progress = 100.0 * (double) counter / (double) totalIterations;
+                    LOG.info(String.format(locale, "Eval progress: %1.2f%%", progress));
 
                     EvalMethod em = null;
 
@@ -88,30 +89,21 @@ public class Evaluator {
                             LOG.severe("No eval stage found called " + iterName.toString());
                     }
 
+                    double time = em.eval(files, consumer);
                     // if analysis iteration fails - redo iteration
-                    if (!em.eval(files, consumer)) {
+                    if (time < 0.0) {
                         i--;
                         continue;
                     }
 
-                    // Wait for all analysis threads
-                    boolean done = false;
-                    while (!done) {
-                        boolean temp = true;
-                        for (Future<?> f : analyzer.last) {
-                            temp &= f.isDone();
-                        }
-                        done = temp;
-                    }
-
                     // record time
-                    timings[i] = System.currentTimeMillis() - time;
+                    timings[i] = time;
                 }
 
                 // Write recorded data to file
                 SimpleFileWriter writer = new SimpleFileWriter(fw.frameworkName() + "-" + iterName.toString() + ".txt");
                 for (int i = extraIters; i < iterations; i++) {
-                    writer.appendLn(String.valueOf(timings[i]));
+                    writer.appendLn(String.format(locale, "%1.5f", timings[i] / 1000000.0));
                 }
                 writer.close();
 
@@ -123,7 +115,9 @@ public class Evaluator {
                 + "seconds\n==================\n");
     }
 
-    private boolean evalBase(Collection<? extends Module> files, AnalysisConsumer consumer) {
+    private double evalBase(Collection<? extends Module> files, AnalysisConsumer consumer) {
+        double time = System.nanoTime();
+
         MagpieServer server = (MagpieServer) consumer;
         analyzer.setClassPath(server, files);
 
@@ -150,21 +144,29 @@ public class Evaluator {
             }));
         }
 
-        return true;
+        return System.nanoTime() - time;
     }
 
-    private boolean evalCompile(Collection<? extends Module> files, AnalysisConsumer consumer) {
+    private double evalCompile(Collection<? extends Module> files, AnalysisConsumer consumer) {
         MagpieServer server = (MagpieServer) consumer;
         analyzer.setClassPath(server, files);
 
         // Setup analysis framework and run
+        double time = System.nanoTime();
         analyzer.framework.setup(files, analyzer.totalClassPath, analyzer.srcPath, analyzer.libPath,
                 analyzer.progFilesAbsPaths);
 
         int exitCode = analyzer.framework.run();
+
         if (exitCode == 4) {
-            return false;
+            return -1.0;
         }
+
+        return System.nanoTime() - time;
+    }
+
+    private double evalAnalyze(Collection<? extends Module> files, AnalysisConsumer consumer) {
+        MagpieServer server = (MagpieServer) consumer;
 
         // ANALYZE
         // Clean up previous analysis results and ongoing analyses
@@ -176,45 +178,7 @@ public class Evaluator {
         }
         analyzer.last.clear();
 
-        // Initiate analyses on seperate threads and set them running
-        for (CodeAnalysis analysis : StaticServerAnalysis.analysisList) {
-            if (!StaticServerAnalysis.activeAnalyses.get(analysis.getName()))
-                continue;
-
-            analyzer.last.add(analyzer.exeService.submit(new Runnable() {
-                @Override
-                public void run() {
-                    // Do nothing
-                }
-            }));
-        }
-
-        return true;
-    }
-
-    private boolean evalAnalyze(Collection<? extends Module> files, AnalysisConsumer consumer) {
-        MagpieServer server = (MagpieServer) consumer;
-        analyzer.setClassPath(server, files);
-
-        // Setup analysis framework and run
-        analyzer.framework.setup(files, analyzer.totalClassPath, analyzer.srcPath, analyzer.libPath,
-                analyzer.progFilesAbsPaths);
-
-        int exitCode = analyzer.framework.run();
-        if (exitCode == 4) {
-            return false;
-        }
-
-        // ANALYZE
-
-        // Clean up previous analysis results and ongoing analyses
-        server.cleanUp();
-        for (Future<?> f : analyzer.last) {
-            if (f != null && !f.isDone()) {
-                f.cancel(false);
-            }
-        }
-        analyzer.last.clear();
+        double time = System.nanoTime();
 
         // Initiate analyses on seperate threads and set them running
         for (CodeAnalysis analysis : StaticServerAnalysis.analysisList) {
@@ -229,16 +193,26 @@ public class Evaluator {
             }));
         }
 
-        return true;
+        // Wait for all analysis threads
+        boolean done = false;
+        while (!done) {
+            boolean temp = true;
+            for (Future<?> f : analyzer.last) {
+                temp &= f.isDone();
+            }
+            done = temp;
+        }
+
+        return System.nanoTime() - time;
     }
 
-    private void clearActiveAnalyses(){
-        for(String a : StaticServerAnalysis.activeAnalyses.keySet())
+    private void clearActiveAnalyses() {
+        for (String a : StaticServerAnalysis.activeAnalyses.keySet())
             StaticServerAnalysis.activeAnalyses.put(a, false);
     }
 
     @FunctionalInterface
     private interface EvalMethod {
-        boolean eval(Collection<? extends Module> files, AnalysisConsumer consumer);
+        double eval(Collection<? extends Module> files, AnalysisConsumer consumer);
     }
 }

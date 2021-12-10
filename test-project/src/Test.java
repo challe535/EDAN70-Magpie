@@ -17,7 +17,6 @@ public class Test {
       boolean b = s3 == s2;
       boolean c = b;
 
-      Other o = new Other();
       String s = null;
       if (b){
           s = "Monday";
@@ -33,9 +32,5 @@ public class Test {
 
       List<Object> l = new ArrayList<>();
       System.out.println(l.size());
-      
-      o.deadAssignment();
-      o.doNothing();
-      o.compareStr(s1, s2);
     }
 }

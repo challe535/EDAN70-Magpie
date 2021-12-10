@@ -8,7 +8,7 @@ import java.util.Set;
 import com.ibm.wala.classLoader.Module;
 import com.ibm.wala.classLoader.SourceFileModule;
 
-import magpiebridge.converter.WalaToSootIRConverter;
+import intrep.util.magpiebridge.converter.WalaToSootIRConverter;
 import magpiebridge.core.AnalysisResult;
 
 import soot.G;
@@ -21,12 +21,14 @@ import soot.options.Options;
 public class SootFramework extends AnalysisFramework {
   private Set<String> srcPath;
   private Set<String> libPath;
+  private Collection<? extends Module> files;
 
   @Override
   public void setup(Collection<? extends Module> files, Set<String> classPath, Set<String> srcPath, Set<String> libPath,
       Set<String> progPath) {
     this.srcPath = srcPath;
     this.libPath = libPath;
+    this.files = files;
 
     G.reset();
     Options.v().set_soot_classpath(calculateClassPathString(classPath));
@@ -57,44 +59,11 @@ public class SootFramework extends AnalysisFramework {
       results.addAll(analysis.getResult());
     }
 
-    // SimpleTransformer transformer = new SimpleTransformer(analysis, clientURL);
-    // runSootPacks(transformer);
-
-    // return transformer.results;
     return results;
   }
-
-  // private void runSootPacks(Transformer t) {
-  // Transform transform = new Transform("jtp.analysis", t);
-  // PackManager.v().getPack("jtp").add(transform);
-  // PackManager.v().runBodyPacks();
-  // }
 
   @Override
   public String frameworkName() {
     return "Soot";
   }
-
-  // private class SimpleTransformer extends BodyTransformer {
-  // private Collection<AnalysisResult> results;
-  // private CodeAnalysis<Body> analysis;
-  // private URL clientURL;
-
-  // public SimpleTransformer(CodeAnalysis<Body> analysis, URL clientURL) {
-  // results = new HashSet<>();
-  // this.analysis = analysis;
-  // this.clientURL = clientURL;
-  // }
-
-  // // public Collection<AnalysisResult> getAnalysisResults() {
-  // // return results;
-  // // }
-
-  // @Override
-  // protected void internalTransform(Body b, String phaseName, Map<String,
-  // String> options) {
-  // analysis.doAnalysis(b, clientURL);
-  // results.addAll(analysis.getResult());
-  // }
-  // }
 }

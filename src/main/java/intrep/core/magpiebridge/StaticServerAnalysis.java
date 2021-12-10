@@ -42,7 +42,6 @@ public class StaticServerAnalysis implements ServerAnalysis {
   public Set<String> srcPath;
   public Set<String> libPath;
   public Set<Path> classPath;
-  public Optional<Path> rootPath;
 
   public Set<String> progFilesAbsPaths;
   public Set<String> totalClassPath;
@@ -53,7 +52,7 @@ public class StaticServerAnalysis implements ServerAnalysis {
 
   public static Map<String, Boolean> activeAnalyses;
   public static Collection<CodeAnalysis<?>> analysisList;
-  
+
   private Evaluator evaluator;
   private Boolean shouldEval = false;
 
@@ -75,8 +74,8 @@ public class StaticServerAnalysis implements ServerAnalysis {
 
   @Override
   public void analyze(Collection<? extends Module> files, AnalysisConsumer consumer, boolean rerun) {
-    if(rerun) {
-      if(shouldEval) {
+    if (rerun) {
+      if (shouldEval) {
         evaluator.eval(files, consumer);
       } else {
         doSingleAnalysisIteration(files, consumer);
@@ -87,29 +86,29 @@ public class StaticServerAnalysis implements ServerAnalysis {
   private boolean doSingleAnalysisIteration(Collection<? extends Module> files, AnalysisConsumer consumer) {
     MagpieServer server = (MagpieServer) consumer;
     setClassPath(server, files);
-   
-    //Setup analysis framework and run
-    framework.setup(files, totalClassPath, srcPath, libPath, progFilesAbsPaths); 
+
+    // Setup analysis framework and run
+    framework.setup(files, totalClassPath, srcPath, libPath, progFilesAbsPaths);
     int exitCode = framework.run();
 
     LOG.info(framework.frameworkName() + " run completed with exitCode " + exitCode);
-    
-    //ANALYZE
 
-    //Clean up previous analysis results and ongoing analyses
+    // ANALYZE
+
+    // Clean up previous analysis results and ongoing analyses
     server.cleanUp();
-    for(Future<?> f : last) {
-      if(f != null && !f.isDone()) {
+    for (Future<?> f : last) {
+      if (f != null && !f.isDone()) {
         f.cancel(false);
-      if (f.isCancelled())
-        LOG.info("Susscessfully cancelled last analysis and start new");
+        if (f.isCancelled())
+          LOG.info("Susscessfully cancelled last analysis and start new");
       }
     }
     last.clear();
 
-    //Initiate analyses on seperate threads and set them running
+    // Initiate analyses on seperate threads and set them running
     for (CodeAnalysis analysis : analysisList) {
-      if(!activeAnalyses.get(analysis.getName()))
+      if (!activeAnalyses.get(analysis.getName()))
         continue;
 
       last.add(exeService.submit(new Runnable() {
@@ -131,7 +130,7 @@ public class StaticServerAnalysis implements ServerAnalysis {
         try {
           final URL clientURL = new URL(server.getClientUri(sourceFile.getURL().toString()));
           results.addAll(framework.analyze(sourceFile, clientURL, analysis));
-        } catch(MalformedURLException e) {
+        } catch (MalformedURLException e) {
           e.printStackTrace();
         }
       }
@@ -157,11 +156,9 @@ public class StaticServerAnalysis implements ServerAnalysis {
         }
 
         classPath = ps.getClassPath();
-        rootPath = ps.getRootPath();
-
       }
     }
-    
+
     updatePaths(files);
   }
 
@@ -186,12 +183,13 @@ public class StaticServerAnalysis implements ServerAnalysis {
 
     Iterator<String> srcIt = srcPath.iterator();
 
-    //BUILD FROM SRC
-    while(srcIt.hasNext()) {
-      String src =  srcIt.next();
+    // BUILD FROM SRC
+    while (srcIt.hasNext()) {
+      String src = srcIt.next();
       Collection<String> srcJavas = FilePathService.getJavaFilesForFolder(new File(src), ".java");
       for (String javaPath : srcJavas) {
-        if(!requestedFiles.contains(FilePathService.getFileNameFromPath(javaPath)) && !progFilesAbsPaths.contains(javaPath)) 
+        if (!requestedFiles.contains(FilePathService.getFileNameFromPath(javaPath))
+            && !progFilesAbsPaths.contains(javaPath))
           progFilesAbsPaths.add(javaPath);
       }
 
@@ -201,10 +199,10 @@ public class StaticServerAnalysis implements ServerAnalysis {
       }
     }
 
-    if(!libPath.isEmpty()) {
+    if (!libPath.isEmpty()) {
       Iterator<String> libIt = libPath.iterator();
-      while(libIt.hasNext()) {
-        String lib =  libIt.next();             
+      while (libIt.hasNext()) {
+        String lib = libIt.next();
         Set<String> libJars = new HashSet<>(FilePathService.getJavaFilesForFolder(new File(lib), ".jar"));
         for (String jarPath : libJars) {
           totalClassPath.add(jarPath);
@@ -212,7 +210,8 @@ public class StaticServerAnalysis implements ServerAnalysis {
 
         Collection<String> libJavas = FilePathService.getJavaFilesForFolder(new File(lib), ".java");
         for (String javaPath : libJavas) {
-          if(!requestedFiles.contains(FilePathService.getFileNameFromPath(javaPath)) && !progFilesAbsPaths.contains(javaPath)) 
+          if (!requestedFiles.contains(FilePathService.getFileNameFromPath(javaPath))
+              && !progFilesAbsPaths.contains(javaPath))
             progFilesAbsPaths.add(javaPath);
         }
       }
@@ -221,20 +220,12 @@ public class StaticServerAnalysis implements ServerAnalysis {
     for (Path p : classPath) {
       totalClassPath.add(p.toString());
     }
-
-    if(rootPath.isPresent()) {
-      String root = rootPath.get().toString();
-      Set<String> ecp = new HashSet<>(FilePathService.getJavaFilesForFolder(new File(root), ".jar"));
-      for (String p : ecp) {
-        totalClassPath.add(p);
-      }
-    }
   }
 
   @Override
-  public List<ConfigurationOption> getConfigurationOptions() { 
+  public List<ConfigurationOption> getConfigurationOptions() {
     List<ConfigurationOption> options = new ArrayList<>();
-    ConfigurationOption evalActive = new ConfigurationOption("Evaluation mode", OptionType.checkbox); 
+    ConfigurationOption evalActive = new ConfigurationOption("Evaluation mode", OptionType.checkbox);
     ConfigurationOption evalIter = new ConfigurationOption("Evalutaion iterations", OptionType.text, "1");
     evalActive.addChild(evalIter);
 
@@ -257,35 +248,39 @@ public class StaticServerAnalysis implements ServerAnalysis {
 
   @Override
   public void configure(List<ConfigurationOption> configuration) {
-      for (ConfigurationOption o : configuration){
-          switch(o.getName()) {
-            case "Evaluation mode": 
-              shouldEval = o.getValueAsBoolean(); 
-              if(shouldEval) 
-                evaluator = new Evaluator(this, Integer.parseInt(o.getChildren().get(0).getValue()));
-              break;
-            case "Frameworks":
-              for(ConfigurationOption c : o.getChildren()) {
-                if(c.getValueAsBoolean())
-                  framework = frameworkConstructor(c.getName());
-              }
-              break;
-            case "Analyses": 
-              for(ConfigurationOption c : o.getChildren()) {
-                activeAnalyses.put(c.getName(), c.getValueAsBoolean());
-              }
-              break;
-            default:
-              LOG.warning("No configuration case mathcing " + o.getName());
-          }    
-      } 
+    for (ConfigurationOption o : configuration) {
+      switch (o.getName()) {
+        case "Evaluation mode":
+          shouldEval = o.getValueAsBoolean();
+          if (shouldEval)
+            evaluator = new Evaluator(this, Integer.parseInt(o.getChildren().get(0).getValue()));
+          break;
+        case "Frameworks":
+          for (ConfigurationOption c : o.getChildren()) {
+            if (c.getValueAsBoolean())
+              framework = frameworkConstructor(c.getName());
+          }
+          break;
+        case "Analyses":
+          for (ConfigurationOption c : o.getChildren()) {
+            activeAnalyses.put(c.getName(), c.getValueAsBoolean());
+          }
+          break;
+        default:
+          LOG.warning("No configuration case mathcing " + o.getName());
+      }
+    }
   }
 
   private AnalysisFramework frameworkConstructor(String name) {
-    switch(name) {
-      case "IntraJ" : return new IntraJFramework();
-      case "Soot" : return new SootFramework();
-      default : LOG.severe("No framework matched name " + name); return null;
+    switch (name) {
+      case "IntraJ":
+        return new IntraJFramework();
+      case "Soot":
+        return new SootFramework();
+      default:
+        LOG.severe("No framework matched name " + name);
+        return null;
     }
   }
 
